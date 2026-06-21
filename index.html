@@ -6,321 +6,109 @@
 <title>Comic-Deck</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #121212;
-  color: #e0e0e0;
-  min-height: 100vh;
-}
-.container { max-width: 500px; margin: 0 auto; padding: 16px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#121212;color:#e0e0e0;min-height:100vh}
+.container{max-width:500px;margin:0 auto;padding:16px}
 
-.login-box {
-  background: #1e1e1e;
-  border-radius: 12px;
-  padding: 32px;
-  margin-top: 60px;
-  text-align: center;
-}
-.login-box h1 { color: #69f0ae; font-size: 28px; margin-bottom: 8px; }
-.login-box p { color: #888; margin-bottom: 24px; }
-input {
-  width: 100%;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #2a2a2a;
-  color: #fff;
-  font-size: 16px;
-}
-input:focus { outline: none; border-color: #69f0ae; }
+.login-box{background:#1e1e1e;border-radius:12px;padding:32px;margin-top:60px;text-align:center}
+.login-box h1{color:#69f0ae;font-size:28px;margin-bottom:8px}
+.login-box p{color:#888;margin-bottom:24px}
 
-.btn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.btn:hover { opacity: 0.9; }
-.btn-primary { background: #69f0ae; color: #000; }
-.btn-secondary { background: #333; color: #fff; margin-top: 8px; }
-.btn-danger { background: #cf6679; color: #fff; }
-.btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
-@media (max-width: 480px) {
-  .btn-small { font-size: 12px; padding: 6px 8px; }
-}
+input,select,textarea{width:100%;padding:12px 16px;margin-bottom:12px;border:1px solid #333;border-radius:8px;background:#2a2a2a;color:#fff;font-size:16px}
+input:focus,textarea:focus{outline:none;border-color:#69f0ae}
+textarea{resize:vertical;min-height:80px}
 
-.error { color: #cf6679; margin-top: 8px; font-size: 14px; }
-.success { color: #69f0ae; margin-top: 8px; font-size: 14px; }
+.btn{width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.9}
+.btn-primary{background:#69f0ae;color:#000}
+.btn-secondary{background:#333;color:#fff;margin-top:8px}
+.btn-small{padding:8px 12px;font-size:13px;width:auto}
+.btn-danger{background:#cf6679;color:#fff}
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #333;
-  margin-bottom: 16px;
-}
-.header h1 { color: #69f0ae; font-size: 22px; }
-.header .user { color: #888; font-size: 13px; }
+.error{color:#cf6679;margin-top:8px;font-size:14px}
+.success{color:#69f0ae;margin-top:8px;font-size:14px}
 
-.search-bar {
-  width: 100%;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #1e1e1e;
-  color: #fff;
-  font-size: 16px;
-}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid #333;margin-bottom:16px}
+.header h1{color:#69f0ae;font-size:22px}
+.header .user{color:#888;font-size:13px}
 
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.tab {
-  flex: 1;
-  padding: 12px;
-  text-align: center;
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #888;
-}
-.tab.active { background: #69f0ae; color: #000; font-weight: 600; }
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;padding:12px;text-align:center;background:#1e1e1e;border:1px solid #333;border-radius:8px;cursor:pointer;color:#888}
+.tab.active{background:#69f0ae;color:#000;font-weight:600}
 
-.comic-list { display: flex; flex-direction: column; gap: 12px; }
-.comic-card {
-  background: #1e1e1e;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  position: relative;
-}
-.comic-thumb {
-  width: 80px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-  flex-shrink: 0;
-  background: #2a2a2a;
-}
-.comic-thumb.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  color: #555;
-}
-.comic-info { flex: 1; min-width: 0; }
-.comic-info h3 {
-  font-size: 16px;
-  color: #fff;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.comic-info p { font-size: 13px; color: #888; margin-bottom: 2px; }
-.comic-tags {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-.tag {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.tag-signed { background: #ffc107; color: #000; }
-.tag-coa { background: #1565c0; color: #fff; }
-.tag-remark { background: #7b1fa2; color: #fff; }
-.tag-graded { background: #69f0ae; color: #000; }
+.comic-list{display:flex;flex-direction:column;gap:12px}
+.comic-card{background:#1e1e1e;border-radius:12px;padding:16px;display:flex;gap:16px;align-items:flex-start;position:relative}
+.comic-thumb{width:80px;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:32px;color:#555}
+.comic-info{flex:1;min-width:0}
+.comic-info h3{font-size:16px;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.comic-info p{font-size:13px;color:#888;margin-bottom:2px}
+.comic-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 
-.delete-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  color: #cf6679;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-}
+.tag{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase}
+.tag-signed{background:#ffc107;color:#000}
+.tag-coa{background:#1565c0;color:#fff}
+.tag-remark{background:#7b1fa2;color:#fff}
+.tag-graded{background:#69f0ae;color:#000}
 
-.form-section {
-  background: #1e1e1e;
-  border-radius: 12px;
-  padding: 20px;
-}
-.form-section h2 { color: #69f0ae; margin-bottom: 16px; font-size: 18px; }
-.form-row { display: flex; gap: 12px; }
-.form-row input { flex: 1; }
+.delete-btn{position:absolute;top:8px;right:8px;background:none;border:none;color:#cf6679;font-size:20px;cursor:pointer;padding:4px}
+.edit-btn{right:40px;color:#69f0ae}
 
-select {
-  width: 100%;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #2a2a2a;
-  color: #fff;
-  font-size: 16px;
-}
+.form-section{background:#1e1e1e;border-radius:12px;padding:20px}
+.form-section h2{color:#69f0ae;margin-bottom:16px;font-size:18px}
+.form-row{display:flex;gap:12px}
+.form-row>*{flex:1}
 
-.checkboxes {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin: 12px 0;
-}
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #ccc;
-}
+.checkboxes{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
+.checkbox-label{display:flex;align-items:center;gap:6px;font-size:14px;color:#ccc}
 
-.image-preview {
-  width: 100px;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 12px 0;
-  display: none;
-  background: #2a2a2a;
-}
+.image-preview{width:100px;height:150px;object-fit:cover;border-radius:8px;margin:12px 0;display:none;background:#2a2a2a}
 
-.file-input-wrapper { margin-bottom: 12px; }
-#gradazioneFields { margin-bottom: 12px; }
+.file-btns{display:flex;justify-content:center;gap:16px;margin-bottom:12px}
+.file-btn{cursor:pointer;width:56px;height:56px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:24px;color:#69f0ae;border:2px solid #69f0ae;position:relative}
+.file-btn input{position:absolute;opacity:0;width:0;height:0}
 
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-}
-.modal-content {
-  background: #1e1e1e;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 20px;
-}
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.modal-header h3 { color: #69f0ae; }
-.modal-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-}
-.modal-img {
-  width: 100%;
-  max-height: 400px;
-  object-fit: contain;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-.modal-meta p { color: #888; margin-bottom: 4px; }
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.modal-content{background:#1e1e1e;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-header h3{color:#69f0ae}
+.modal-close{background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
+.modal-img{width:100%;max-height:400px;object-fit:contain;border-radius:8px;margin-bottom:16px}
+.modal-meta p{color:#888;margin-bottom:4px}
 
-.hidden { display: none !important; }
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-style: italic;
-}
+.hidden{display:none!important}
+.empty-state{text-align:center;padding:40px;color:#666;font-style:italic}
 
-.stat-card {
-  background: #2a2a2a;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.stat-card .stat-label {
-  color: #888;
-  font-size: 14px;
-}
-.stat-card .stat-value {
-  color: #69f0ae;
-  font-size: 22px;
-  font-weight: 700;
-}
-.stat-card .stat-value.big {
-  font-size: 32px;
-}
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-.stat-grid .stat-card {
-  flex-direction: column;
-  text-align: center;
-}
-.stat-grid .stat-card .stat-label {
-  margin-bottom: 4px;
-}
+.stat-card{background:#2a2a2a;border-radius:10px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.stat-card .stat-label{color:#888;font-size:14px}
+.stat-card .stat-value{color:#69f0ae;font-size:22px;font-weight:700}
+.stat-card .stat-value.big{font-size:32px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.stat-grid .stat-card{flex-direction:column;text-align:center}
+.stat-grid .stat-card .stat-label{margin-bottom:4px}
+
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filters select{flex:1;min-width:100px;margin-bottom:0}
 </style>
 <base target="_blank">
 </head>
 <body>
 
 <div class="container">
-
-  <!-- LOGIN SCREEN -->
   <div id="loginScreen">
     <div class="login-box">
       <h1>Comic-Deck</h1>
       <p>Il tuo archivio fumetti personale</p>
-      <input type="email" id="emailInput" placeholder="Email" value="">
-      <input type="password" id="passwordInput" placeholder="Password" value="">
+      <input type="email" id="emailInput" placeholder="Email">
+      <input type="password" id="passwordInput" placeholder="Password">
       <button class="btn btn-primary" onclick="handleLogin()">Accedi</button>
       <button class="btn btn-secondary" onclick="handleSignup()">Registrati</button>
       <div id="loginMsg"></div>
     </div>
   </div>
 
-  <!-- MAIN APP -->
   <div id="mainScreen" class="hidden">
     <div class="header">
-      <div>
-        <h1>Comic-Deck</h1>
-        <span class="user" id="userEmail"></span>
-      </div>
+      <div><h1>Comic-Deck</h1><span class="user" id="userEmail"></span></div>
       <button class="btn btn-small btn-secondary" onclick="handleLogout()">Esci</button>
     </div>
 
@@ -330,79 +118,45 @@ select {
       <div class="tab" onclick="switchTab('stats')" id="tabStats">Statistiche</div>
     </div>
 
-    <!-- LIST VIEW -->
-    <div id="listView" style="position:relative;">
-      <div id="pullIndicator" style="display:none; text-align:center; padding:20px; color:#69f0ae; font-size:14px;">&#8595; Rilascia per aggiornare</div>
-      <input type="text" class="search-bar" id="searchInput" placeholder="Cerca per titolo, publisher, numero, anno, disegnatore..." oninput="searchComics()">
-      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-        <select id="filterTipo" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
-          <option value="">Tutti i tipi</option>
-          <option value="Comics">Comics</option>
-          <option value="Manga">Manga</option>
-          <option value="Libri">Libri</option>
-        </select>
-        <select id="filterLingua" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
-          <option value="">Tutte le lingue</option>
-          <option value="Italiano">Italiano</option>
-          <option value="English">English</option>
-          <option value="Altro">Altro</option>
-        </select>
-        <select id="filterAnno" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
-          <option value="">Tutti gli anni</option>
-        </select>
+    <div id="listView">
+      <div id="pullIndicator" class="hidden" style="text-align:center;padding:20px;color:#69f0ae">&#8595; Rilascia per aggiornare</div>
+      <input type="text" class="search-bar" id="searchInput" placeholder="Cerca..." oninput="searchComics()">
+      <div class="filters">
+        <select id="filterTipo" onchange="searchComics()"><option value="">Tutti i tipi</option><option>Comics</option><option>Manga</option><option>Libri</option></select>
+        <select id="filterLingua" onchange="searchComics()"><option value="">Tutte le lingue</option><option>Italiano</option><option>English</option><option>Altro</option></select>
+        <select id="filterAnno" onchange="searchComics()"><option value="">Tutti gli anni</option></select>
       </div>
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportCSV()">&#128190; CSV</button>
-        <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportPDF()">&#128196; PDF</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-secondary btn-small" style="flex:1;margin-top:0" onclick="exportCSV()">&#128190; CSV</button>
+        <button class="btn btn-secondary btn-small" style="flex:1;margin-top:0" onclick="exportPDF()">&#128196; PDF</button>
       </div>
       <div id="comicList" class="comic-list"></div>
     </div>
 
-    <!-- ADD VIEW -->
     <div id="addView" class="hidden">
       <div class="form-section" oninput="markDirty()" onchange="markDirty()">
         <h2 id="formTitle">Aggiungi un nuovo albo</h2>
-        <div class="file-input-wrapper">
-          <div style="display:flex; justify-content:center; gap:16px; margin-bottom:12px;">
-            <label style="cursor:pointer; width:56px; height:56px; border-radius:50%; background:#333; display:flex; align-items:center; justify-content:center; font-size:24px; color:#69f0ae; border:2px solid #69f0ae;" title="Scatta Foto">
-              &#128247;
-              <input type="file" id="coverInputCamera" accept="image/*" capture="environment" style="position:absolute; opacity:0; width:0; height:0;" onchange="previewImage(this)">
-            </label>
-            <label style="cursor:pointer; width:56px; height:56px; border-radius:50%; background:#333; display:flex; align-items:center; justify-content:center; font-size:24px; color:#69f0ae; border:2px solid #69f0ae;" title="Galleria">
-              &#128444;
-              <input type="file" id="coverInputGallery" accept="image/*" style="position:absolute; opacity:0; width:0; height:0;" onchange="previewImage(this)">
-            </label>
-          </div>
+        <div class="file-btns">
+          <label class="file-btn" title="Scatta Foto">&#128247;<input type="file" id="coverInputCamera" accept="image/*" capture="environment" onchange="previewImage(this)"></label>
+          <label class="file-btn" title="Galleria">&#128444;<input type="file" id="coverInputGallery" accept="image/*" onchange="previewImage(this)"></label>
         </div>
-        <img id="imagePreview" class="image-preview" style="image-orientation: from-image;">
+        <img id="imagePreview" class="image-preview">
         <input type="text" id="titolo" placeholder="Titolo *">
-        <select id="categoria">
-          <option value="Comics">Comics</option>
-          <option value="Manga">Manga</option>
-          <option value="Libri">Libri</option>
-        </select>
+        <select id="categoria"><option>Comics</option><option>Manga</option><option>Libri</option></select>
         <div class="form-row">
-          <input type="number" id="numero" placeholder="Numero / Issue" min="0">
+          <input type="number" id="numero" placeholder="Numero" min="0">
           <input type="number" id="anno" placeholder="Anno" min="1900" max="2100">
         </div>
-        <input type="text" id="publisher" placeholder="Publisher / Casa Editrice">
+        <input type="text" id="publisher" placeholder="Publisher">
         <input type="text" id="disegnatore" placeholder="Disegnatore">
-        <select id="lingua">
-          <option value="Italiano">Italiano</option>
-          <option value="English">English</option>
-          <option value="Altro">Altro</option>
-        </select>
-        <select id="variant">
-          <option value="Standard">Standard</option>
-          <option value="Variant">Variant</option>
-          <option value="Virgin">Virgin</option>
-        </select>
+        <select id="lingua"><option>Italiano</option><option>English</option><option>Altro</option></select>
+        <select id="variant"><option>Standard</option><option>Variant</option><option>Virgin</option></select>
         <select id="stato">
           <option value="Non Specificato">Stato del Fumetto</option>
-          <option value="Mint (Perfetto)">Mint (Perfetto)</option>
-          <option value="Near Mint (Quasi Perfetto)">Near Mint (Quasi Perfetto)</option>
-          <option value="Very Fine / Very Good">Very Fine / Very Good</option>
-          <option value="Rovinato / Battle Damaged">Rovinato / Battle Damaged</option>
+          <option>Mint (Perfetto)</option>
+          <option>Near Mint (Quasi Perfetto)</option>
+          <option>Very Fine / Very Good</option>
+          <option>Rovinato / Battle Damaged</option>
         </select>
         <div class="checkboxes">
           <label class="checkbox-label"><input type="checkbox" id="firmato"> Firmato</label>
@@ -410,18 +164,13 @@ select {
           <label class="checkbox-label"><input type="checkbox" id="remark"> Remark</label>
           <label class="checkbox-label"><input type="checkbox" id="gradato" onchange="toggleGradazione()"> Gradato</label>
         </div>
-        <textarea id="note" placeholder="Note..." rows="3" style="width:100%; padding:12px; border:1px solid #333; border-radius:8px; background:#2a2a2a; color:#fff; font-size:16px; resize:vertical; margin-bottom:12px;"></textarea>
-        <div id="gradazioneFields" style="display:none; margin-bottom:12px;">
+        <textarea id="note" placeholder="Note..." rows="3"></textarea>
+        <div id="gradazioneFields" class="hidden">
           <div class="form-row">
-            <input type="number" id="votoGradazione" placeholder="Voto (es. 9.8)" step="0.1" min="0" max="10" style="flex:1">
-            <select id="enteGradazione" style="flex:2; margin-bottom:0;">
+            <input type="number" id="votoGradazione" placeholder="Voto (es. 9.8)" step="0.1" min="0" max="10">
+            <select id="enteGradazione">
               <option value="">Ente di gradazione</option>
-              <option value="CGC">CGC</option>
-              <option value="GRAAD">GRAAD</option>
-              <option value="EGS">EGS</option>
-              <option value="Cread">Cread</option>
-              <option value="CBCS">CBCS</option>
-              <option value="PGx">PGx</option>
+              <option>CGC</option><option>GRAAD</option><option>EGS</option><option>Cread</option><option>CBCS</option><option>PGx</option>
             </select>
           </div>
         </div>
@@ -430,7 +179,6 @@ select {
       </div>
     </div>
 
-    <!-- STATS VIEW -->
     <div id="statsView" class="hidden">
       <div class="form-section">
         <h2>Statistiche Collezione</h2>
@@ -438,778 +186,380 @@ select {
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- MODAL -->
 <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Anteprima Copertina</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
-    </div>
+    <div class="modal-header"><h3>Anteprima Copertina</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <img id="modalImg" class="modal-img" src="" alt="Copertina">
     <div id="modalMeta" class="modal-meta"></div>
   </div>
 </div>
 
 <script>
-// ==================== CONFIG ====================
 const SUPABASE_URL = 'https://altubrcwczbxqpwdjiav.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qWfV1_-RfhOk8efDgqiYkQ_MLiAgYvy';
-
-// ==================== INIT ====================
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let currentUser = null;
-let allComics = [];
-let editingId = null;
-let formDirty = false;
+
+let currentUser = null, allComics = [], editingId = null, formDirty = false;
+
+const qs = (s) => document.querySelector(s);
+const qsa = (s) => document.querySelectorAll(s);
 
 // ==================== AUTH ====================
 async function handleLogin() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const msg = document.getElementById('loginMsg');
-
-  if (!email || !password) {
-    msg.innerHTML = '<span class="error">Inserisci email e password</span>';
-    return;
-  }
-
+  const email = qs('#emailInput').value.trim(), password = qs('#passwordInput').value, msg = qs('#loginMsg');
+  if (!email || !password) return msg.innerHTML = '<span class="error">Inserisci email e password</span>';
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    msg.innerHTML = '<span class="error">' + error.message + '</span>';
-  } else {
-    currentUser = data.user;
-    showMainScreen();
-  }
+  if (error) return msg.innerHTML = `<span class="error">${error.message}</span>`;
+  currentUser = data.user;
+  showMainScreen();
 }
 
 async function handleSignup() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const msg = document.getElementById('loginMsg');
-
-  if (!email || !password) {
-    msg.innerHTML = '<span class="error">Inserisci email e password</span>';
-    return;
-  }
-  if (password.length < 6) {
-    msg.innerHTML = '<span class="error">Password minimo 6 caratteri</span>';
-    return;
-  }
-
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) {
-    msg.innerHTML = '<span class="error">' + error.message + '</span>';
-  } else {
-    msg.innerHTML = '<span class="success">Registrato! Ora accedi.</span>';
-  }
+  const email = qs('#emailInput').value.trim(), password = qs('#passwordInput').value, msg = qs('#loginMsg');
+  if (!email || !password) return msg.innerHTML = '<span class="error">Inserisci email e password</span>';
+  if (password.length < 6) return msg.innerHTML = '<span class="error">Password minimo 6 caratteri</span>';
+  const { error } = await sb.auth.signUp({ email, password });
+  msg.innerHTML = error ? `<span class="error">${error.message}</span>` : '<span class="success">Registrato! Ora accedi.</span>';
 }
 
 async function handleLogout() {
   await sb.auth.signOut();
   currentUser = null;
-  document.getElementById('loginScreen').classList.remove('hidden');
-  document.getElementById('mainScreen').classList.add('hidden');
+  qs('#loginScreen').classList.remove('hidden');
+  qs('#mainScreen').classList.add('hidden');
 }
 
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    showMainScreen();
-  }
+  if (session) { currentUser = session.user; showMainScreen(); }
 }
 
 function showMainScreen() {
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('mainScreen').classList.remove('hidden');
-  document.getElementById('userEmail').textContent = currentUser.email;
+  qs('#loginScreen').classList.add('hidden');
+  qs('#mainScreen').classList.remove('hidden');
+  qs('#userEmail').textContent = currentUser.email;
   loadComics();
 }
 
 // ==================== COMICS ====================
 async function loadComics() {
-  const { data, error } = await sb
-    .from('fumetti')
-    .select('id, titolo, numero, anno, publisher, disegnatore, lingua, variant, stato, firmato, coa, remark, gradato, voto_gradazione, ente_gradazione, immagine_url, categoria, note, user_id, created_at')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error loading comics:', error);
-    document.getElementById('comicList').innerHTML = '<div class="empty-state">Errore caricamento: ' + error.message + '</div>';
-    return;
-  }
-
-  console.log('Loaded comics count:', data ? data.length : 0, 'First item:', data && data[0] ? data[0].titolo : 'none');
+  const { data, error } = await sb.from('fumetti')
+    .select('id,titolo,numero,anno,publisher,disegnatore,lingua,variant,stato,firmato,coa,remark,gradato,voto_gradazione,ente_gradazione,immagine_url,categoria,note,user_id,created_at')
+    .eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  if (error) return qs('#comicList').innerHTML = `<div class="empty-state">Errore: ${error.message}</div>`;
   allComics = data || [];
   populateAnnoFilter();
   renderComics(allComics);
 }
 
 function renderComics(comics) {
-  const list = document.getElementById('comicList');
+  const list = qs('#comicList');
+  if (!comics.length) return list.innerHTML = '<div class="empty-state">Nessun fumetto in archivio. Inizia ad aggiungerne uno!</div>';
   list.innerHTML = '';
+  comics.forEach(c => list.appendChild(buildCard(c)));
+}
 
-  if (comics.length === 0) {
-    list.innerHTML = '<div class="empty-state">Nessun fumetto in archivio. Inizia ad aggiungerne uno!</div>';
-    return;
+function buildCard(c) {
+  const card = document.createElement('div'); card.className = 'comic-card';
+  
+  const tags = [];
+  if (c.firmato) tags.push('signed');
+  if (c.coa) tags.push('coa');
+  if (c.remark) tags.push('remark');
+  if (c.gradato) tags.push('graded');
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'delete-btn edit-btn'; editBtn.innerHTML = '&#9998;';
+  editBtn.onclick = () => editComic(c);
+  card.appendChild(editBtn);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delete-btn'; delBtn.innerHTML = '&#128465;';
+  delBtn.onclick = () => deleteComic(c.id, c.titolo);
+  card.appendChild(delBtn);
+
+  if (c.immagine_url) {
+    const img = document.createElement('img');
+    img.src = c.immagine_url; img.className = 'comic-thumb';
+    img.onclick = () => openModal(c);
+    card.appendChild(img);
+  } else {
+    const ph = document.createElement('div'); ph.className = 'comic-thumb'; ph.innerHTML = '&#128214;';
+    card.appendChild(ph);
   }
 
-  for (let i = 0; i < comics.length; i++) {
-    const c = comics[i];
-    console.log('Comic:', c.titolo, 'note:', c.note, 'type:', typeof c.note);
-    const numDisplay = c.numero ? '<span style="color:#69f0ae;font-weight:700;">#' + escapeHtml(c.numero) + '</span> ' : '';
-    const card = document.createElement('div');
-    card.className = 'comic-card';
-
-    const tags = [];
-    if (c.firmato) tags.push('<span class="tag tag-signed">Firmato</span>');
-    if (c.coa) tags.push('<span class="tag tag-coa">COA</span>');
-    if (c.remark) tags.push('<span class="tag tag-remark">Sketch</span>');
-    if (c.gradato) tags.push('<span class="tag tag-graded">Gradato</span>');
-
-    // Edit button
-    const editBtn = document.createElement('button');
-    editBtn.className = 'delete-btn';
-    editBtn.style.right = '40px';
-    editBtn.innerHTML = '&#9998;';
-    editBtn.onclick = function() { editComic(c); };
-    card.appendChild(editBtn);
-
-    // Delete button
-    const delBtn = document.createElement('button');
-    delBtn.className = 'delete-btn';
-    delBtn.innerHTML = '&#128465;';
-    delBtn.onclick = function() { deleteComic(c.id, c.titolo); };
-    card.appendChild(delBtn);
-
-    // Image
-    if (c.immagine_url) {
-      const img = document.createElement('img');
-      img.src = c.immagine_url;
-      img.className = 'comic-thumb';
-      img.onclick = function() {
-        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria, c.note, c.voto_gradazione, c.ente_gradazione);
-      };
-      card.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'comic-thumb placeholder';
-      placeholder.innerHTML = '&#128214;';
-      card.appendChild(placeholder);
-    }
-
-    // Info
-    const info = document.createElement('div');
-    info.className = 'comic-info';
-    info.innerHTML = 
-      '<h3>' + numDisplay + escapeHtml(c.titolo || 'Titolo sconosciuto') + '</h3>' +
-      '<p><strong style="color:#69f0ae;">' + escapeHtml(c.categoria || 'Comics') + '</strong></p>' +
-      '<p>Issue: ' + escapeHtml(c.numero || '-') + ' Year: ' + escapeHtml(c.anno || '-') + '</p>' +
-      '<p>Publisher: ' + escapeHtml(c.publisher || '-') + '</p>' +
-      '<p>Disegnatore: ' + escapeHtml(c.disegnatore || '-') + '</p>' +
-      '<p>Tipo: ' + escapeHtml(c.variant) + ' ' + escapeHtml(c.lingua) + '</p>' +
-      '<p>Stato: ' + escapeHtml(c.stato) + '</p>' +
-      (c.gradato && c.voto_gradazione ? '<p>Gradato: ' + escapeHtml(c.voto_gradazione) + ' (' + escapeHtml(c.ente_gradazione) + ')</p>' : '') +
-      ((c.note || '') ? '<p style="color:#69f0ae; font-style:italic;">&#9998; ' + escapeHtml((c.note || '').substring(0, 50)) + ((c.note || '').length > 50 ? '...' : '') + '</p>' : '') +
-      '<div class="comic-tags">' + tags.join('') + '</div>';
-    card.appendChild(info);
-
-    list.appendChild(card);
-  }
+  const info = document.createElement('div'); info.className = 'comic-info';
+  const num = c.numero ? `<span style="color:#69f0ae;font-weight:700">#${esc(c.numero)}</span> ` : '';
+  const notePreview = (c.note || '').length > 50 ? esc(c.note.substring(0, 50)) + '...' : esc(c.note || '');
+  
+  info.innerHTML = `
+    <h3>${num}${esc(c.titolo || 'Titolo sconosciuto')}</h3>
+    <p><strong style="color:#69f0ae">${esc(c.categoria || 'Comics')}</strong></p>
+    <p>Issue: ${esc(c.numero || '-')} Year: ${esc(c.anno || '-')}</p>
+    <p>Publisher: ${esc(c.publisher || '-')}</p>
+    <p>Disegnatore: ${esc(c.disegnatore || '-')}</p>
+    <p>Tipo: ${esc(c.variant)} ${esc(c.lingua)}</p>
+    <p>Stato: ${esc(c.stato)}</p>
+    ${c.gradato && c.voto_gradazione ? `<p>Gradato: ${esc(c.voto_gradazione)} (${esc(c.ente_gradazione)})</p>` : ''}
+    ${c.note ? `<p style="color:#69f0ae;font-style:italic">&#9998; ${notePreview}</p>` : ''}
+    <div class="comic-tags">${tags.map(t => `<span class="tag tag-${t}">${t==='signed'?'Firmato':t==='coa'?'COA':t==='remark'?'Sketch':'Gradato'}</span>`).join('')}</div>
+  `;
+  card.appendChild(info);
+  return card;
 }
 
 function searchComics() {
-  const query = document.getElementById('searchInput').value.toLowerCase().trim();
-  const filterTipo = document.getElementById('filterTipo').value;
-  const filterLingua = document.getElementById('filterLingua').value;
-  const filterAnno = document.getElementById('filterAnno').value;
-
-  let filtered = allComics;
-
-  // Filtro testo
-  if (query) {
-    filtered = filtered.filter(c => 
-      (c.titolo || '').toLowerCase().includes(query) ||
-      (c.publisher || '').toLowerCase().includes(query) ||
-      (c.numero || '').toLowerCase().includes(query) ||
-      (c.anno || '').toLowerCase().includes(query) ||
-      (c.disegnatore || '').toLowerCase().includes(query) ||
-      (c.note || '').toLowerCase().includes(query)
-    );
-  }
-
-  // Filtro tipo
-  if (filterTipo) {
-    filtered = filtered.filter(c => (c.categoria || 'Comics') === filterTipo);
-  }
-
-  // Filtro lingua
-  if (filterLingua) {
-    filtered = filtered.filter(c => (c.lingua || 'Italiano') === filterLingua);
-  }
-
-  // Filtro anno
-  if (filterAnno) {
-    filtered = filtered.filter(c => c.anno === filterAnno);
-  }
-
-  // Ordinamento per numero (numerico se possibile)
-  filtered.sort((a, b) => {
-    const numA = parseInt(a.numero) || 0;
-    const numB = parseInt(b.numero) || 0;
-    if (numA !== numB) return numA - numB;
-    return (a.titolo || '').localeCompare(b.titolo || '');
-  });
-
-  renderComics(filtered);
+  const q = qs('#searchInput').value.toLowerCase().trim();
+  const tipo = qs('#filterTipo').value, lingua = qs('#filterLingua').value, anno = qs('#filterAnno').value;
+  
+  let f = allComics.filter(c => !q || [c.titolo,c.publisher,c.numero,c.anno,c.disegnatore,c.note].some(v => (v||'').toLowerCase().includes(q)));
+  if (tipo) f = f.filter(c => (c.categoria || 'Comics') === tipo);
+  if (lingua) f = f.filter(c => (c.lingua || 'Italiano') === lingua);
+  if (anno) f = f.filter(c => c.anno === anno);
+  
+  f.sort((a,b) => (parseInt(a.numero)||0) - (parseInt(b.numero)||0) || (a.titolo||'').localeCompare(b.titolo||''));
+  renderComics(f);
 }
 
 function populateAnnoFilter() {
-  const select = document.getElementById('filterAnno');
-  if (!select) return;
-
-  // Rimuovi opzioni esistenti tranne la prima
-  while (select.options.length > 1) {
-    select.remove(1);
-  }
-
-  // Estrai anni unici e ordinati
-  const anni = [...new Set(allComics.map(c => c.anno).filter(a => a))].sort((a, b) => b - a);
-
-  for (const anno of anni) {
-    const opt = document.createElement('option');
-    opt.value = anno;
-    opt.textContent = anno;
-    select.appendChild(opt);
-  }
+  const sel = qs('#filterAnno');
+  while (sel.options.length > 1) sel.remove(1);
+  [...new Set(allComics.map(c => c.anno).filter(Boolean))].sort((a,b) => b-a).forEach(a => {
+    sel.add(new Option(a, a));
+  });
 }
 
 async function deleteComic(id, titolo) {
-  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall\'archivio?\nL\'immagine verrà cancellata permanentemente.')) {
-    return;
-  }
-
+  if (!confirm(`Eliminare "${titolo}"? L'immagine verrà cancellata.`)) return;
   const comic = allComics.find(c => c.id === id);
-
-  const { error: dbError } = await sb
-    .from('fumetti')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', currentUser.id);
-
-  if (dbError) {
-    alert('Errore nell\'eliminazione: ' + dbError.message);
-    return;
-  }
-
-  if (comic && comic.immagine_url) {
-    const path = comic.immagine_url.split('/').pop();
-    await sb.storage.from('copertine').remove([path]);
-  }
-
+  const { error } = await sb.from('fumetti').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) return alert('Errore: ' + error.message);
+  if (comic?.immagine_url) await sb.storage.from('copertine').remove([comic.immagine_url.split('/').pop()]);
   loadComics();
 }
 
-// ==================== ADD COMIC ====================
-function previewImage(inputElement) {
-  const preview = document.getElementById('imagePreview');
-  const input = inputElement || document.getElementById('coverInputGallery');
-
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-      fixOrientation(preview, input.files[0]);
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+// ==================== FORM ====================
+function previewImage(input) {
+  const preview = qs('#imagePreview');
+  if (!input.files?.[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+  reader.readAsDataURL(input.files[0]);
 }
 
-function fixOrientation(img, file) {
-  img.style.imageOrientation = 'from-image';
-  if (window.EXIF || typeof EXIF !== 'undefined') {
-    EXIF.getData(file, function() {
-      const orientation = EXIF.getTag(this, 'Orientation');
-      let rotate = 0;
-      if (orientation === 6) rotate = 90;
-      else if (orientation === 8) rotate = -90;
-      else if (orientation === 3) rotate = 180;
-      if (rotate !== 0) {
-        img.style.transform = 'rotate(' + rotate + 'deg)';
-      }
-    });
-  }
+function getComicData() {
+  const gradato = qs('#gradato').checked;
+  return {
+    titolo: qs('#titolo').value.trim(),
+    numero: qs('#numero').value.trim(),
+    anno: qs('#anno').value.trim(),
+    publisher: qs('#publisher').value.trim(),
+    disegnatore: qs('#disegnatore').value.trim(),
+    categoria: qs('#categoria').value,
+    lingua: qs('#lingua').value,
+    variant: qs('#variant').value,
+    stato: qs('#stato').value || 'Non Specificato',
+    firmato: qs('#firmato').checked,
+    coa: qs('#coa').checked,
+    remark: qs('#remark').checked,
+    gradato,
+    voto_gradazione: gradato ? (qs('#votoGradazione').value.trim() || '') : '',
+    ente_gradazione: gradato ? (qs('#enteGradazione').value || '') : '',
+    note: qs('#note').value.trim()
+  };
 }
 
 async function saveComic() {
   const isEditing = editingId !== null;
-  const titolo = document.getElementById('titolo').value.trim();
-  const numero = document.getElementById('numero').value.trim();
-  const anno = document.getElementById('anno').value.trim();
-  const publisher = document.getElementById('publisher').value.trim();
-  const disegnatore = document.getElementById('disegnatore').value.trim();
-  const categoria = document.getElementById('categoria').value;
-  const lingua = document.getElementById('lingua').value;
-  const variant = document.getElementById('variant').value;
-  const stato = document.getElementById('stato').value || 'Non Specificato';
-  const firmato = document.getElementById('firmato').checked;
-  const coa = document.getElementById('coa').checked;
-  const remark = document.getElementById('remark').checked;
-  const gradato = document.getElementById('gradato').checked;
-  const votoGradazione = gradato ? (document.getElementById('votoGradazione').value.trim() || '') : '';
-  const enteGradazione = gradato ? (document.getElementById('enteGradazione').value || '') : '';
-  const note = document.getElementById('note').value.trim();
-  const fileInputCamera = document.getElementById('coverInputCamera');
-  const fileInputGallery = document.getElementById('coverInputGallery');
-  const fileInput = (fileInputCamera.files && fileInputCamera.files[0]) ? fileInputCamera : fileInputGallery;
-  const msg = document.getElementById('saveMsg');
+  const data = getComicData();
+  const msg = qs('#saveMsg');
+  if (!data.titolo) return msg.innerHTML = '<span class="error">Inserisci almeno il titolo!</span>';
 
-  if (!titolo) {
-    msg.innerHTML = '<span class="error">Inserisci almeno il titolo!</span>';
-    return;
-  }
-
+  const fileInput = (qs('#coverInputCamera').files?.[0]) ? qs('#coverInputCamera') : qs('#coverInputGallery');
   let imageUrl = '';
 
-  if (fileInput.files && fileInput.files[0]) {
+  if (fileInput.files?.[0]) {
     const file = fileInput.files[0];
-    const ext = file.name.split('.').pop();
-    const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
-
-    const { data: uploadData, error: uploadError } = await sb.storage
-      .from('copertine')
-      .upload(fileName, file, { contentType: file.type });
-
-    if (uploadError) {
-      msg.innerHTML = '<span class="error">Errore upload immagine: ' + uploadError.message + '</span>';
-      return;
-    }
-
-    const { data: urlData } = sb.storage.from('copertine').getPublicUrl(fileName);
-    imageUrl = urlData.publicUrl;
-    
-    // Pulisci l'input file dopo l'upload
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,11)}.${file.name.split('.').pop()}`;
+    const { error: upErr } = await sb.storage.from('copertine').upload(fileName, file, { contentType: file.type });
+    if (upErr) return msg.innerHTML = `<span class="error">Errore upload: ${upErr.message}</span>`;
+    imageUrl = sb.storage.from('copertine').getPublicUrl(fileName).data.publicUrl;
     fileInput.value = '';
   }
 
-  let dbError;
-
+  let result;
   if (isEditing) {
-    const updateData = {
-      titolo: titolo,
-      numero: numero,
-      anno: anno,
-      publisher: publisher,
-      disegnatore: disegnatore,
-      categoria: categoria,
-      lingua: lingua,
-      variant: variant,
-      stato: stato,
-      firmato: firmato,
-      coa: coa,
-      remark: remark,
-      gradato: gradato,
-      voto_gradazione: votoGradazione,
-      ente_gradazione: enteGradazione,
-      note: note
-    };
-    if (imageUrl) updateData.immagine_url = imageUrl;
-
-    const result = await sb.from('fumetti')
-      .update(updateData)
-      .eq('id', editingId)
-      .eq('user_id', currentUser.id);
-    dbError = result.error;
+    const upd = { ...data };
+    if (imageUrl) upd.immagine_url = imageUrl;
+    result = await sb.from('fumetti').update(upd).eq('id', editingId).eq('user_id', currentUser.id);
   } else {
-    const result = await sb.from('fumetti').insert({
-      user_id: currentUser.id,
-      titolo: titolo,
-      numero: numero,
-      anno: anno,
-      publisher: publisher,
-      disegnatore: disegnatore,
-      categoria: categoria,
-      lingua: lingua,
-      variant: variant,
-      stato: stato,
-      firmato: firmato,
-      coa: coa,
-      remark: remark,
-      gradato: gradato,
-      voto_gradazione: votoGradazione,
-      ente_gradazione: enteGradazione,
-      note: note,
-      immagine_url: imageUrl
-    });
-    dbError = result.error;
+    result = await sb.from('fumetti').insert({ ...data, user_id: currentUser.id, immagine_url: imageUrl });
   }
 
-  console.log('Saving note:', note, 'length:', note.length);
-  if (dbError) {
-    console.error('DB Error:', dbError);
-    msg.innerHTML = '<span class="error">Errore salvataggio: ' + dbError.message + '</span>';
-    return;
-  }
-  console.log('Update success, editingId:', editingId, 'isEditing:', isEditing);
-
+  if (result.error) return msg.innerHTML = `<span class="error">Errore: ${result.error.message}</span>`;
+  
   resetForm();
-
-  msg.innerHTML = '<span class="success">' + (isEditing ? 'Aggiornato' : 'Salvato') + ' con successo!</span>';
+  msg.innerHTML = `<span class="success">${isEditing ? 'Aggiornato' : 'Salvato'} con successo!</span>`;
   resetFormDirty();
-  setTimeout(function() { msg.innerHTML = ''; }, 3000);
-
-  setTimeout(function() {
-    switchTab('list');
-    allComics = [];
-    loadComics();
-  }, 800);
+  setTimeout(() => { msg.innerHTML = ''; switchTab('list'); loadComics(); }, 800);
 }
 
 function resetForm() {
-  document.getElementById('titolo').value = '';
-  document.getElementById('numero').value = '';
-  document.getElementById('anno').value = '';
-  document.getElementById('publisher').value = '';
-  document.getElementById('disegnatore').value = '';
-  document.getElementById('categoria').value = 'Comics';
-  document.getElementById('lingua').value = 'Italiano';
-  document.getElementById('variant').value = 'Standard';
-  document.getElementById('stato').value = 'Non Specificato';
-  document.getElementById('firmato').checked = false;
-  document.getElementById('coa').checked = false;
-  document.getElementById('remark').checked = false;
-  document.getElementById('gradato').checked = false;
-  document.getElementById('votoGradazione').value = '';
-  document.getElementById('enteGradazione').value = '';
-  document.getElementById('note').value = '';
-  document.getElementById('gradazioneFields').style.display = 'none';
-  document.getElementById('coverInputCamera').value = '';
-  document.getElementById('coverInputGallery').value = '';
-  document.getElementById('imagePreview').style.display = 'none';
+  ['titolo','numero','anno','publisher','disegnatore','note','votoGradazione'].forEach(id => qs('#'+id).value = '');
+  qs('#categoria').value = 'Comics'; qs('#lingua').value = 'Italiano'; qs('#variant').value = 'Standard'; qs('#stato').value = 'Non Specificato';
+  ['firmato','coa','remark','gradato'].forEach(id => qs('#'+id).checked = false);
+  qs('#enteGradazione').value = ''; qs('#gradazioneFields').classList.add('hidden');
+  qs('#coverInputCamera').value = ''; qs('#coverInputGallery').value = '';
+  qs('#imagePreview').style.display = 'none';
   editingId = null;
-  document.getElementById('saveBtn').textContent = 'Salva in Archivio';
-  document.getElementById('formTitle').textContent = 'Aggiungi un nuovo albo';
-}
-
-// ==================== MODAL ====================
-function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria, note, voto_gradazione, ente_gradazione) {
-  document.getElementById('modalImg').src = imgUrl;
-  document.getElementById('modalMeta').innerHTML = 
-    '<p><strong style="color:#fff;font-size:18px;">' + escapeHtml(titolo || '') + '</strong></p>' +
-    '<p><strong style="color:#69f0ae;">' + escapeHtml(categoria || 'Comics') + '</strong></p>' +
-    '<p>Issue: ' + escapeHtml(numero || '-') + '</p>' +
-    '<p>Anno: ' + escapeHtml(anno || '-') + '</p>' +
-    '<p>Publisher: ' + escapeHtml(publisher || '-') + '</p>' +
-    '<p>Disegnatore: ' + escapeHtml(disegnatore || '-') + '</p>' +
-    '<p>Tipo: ' + escapeHtml(variant || '-') + '</p>' +
-    '<p>Lingua: ' + escapeHtml(lingua || '-') + '</p>' +
-    '<p>Stato: ' + escapeHtml(stato || '-') + '</p>' +
-    (gradato && voto_gradazione ? '<p>Gradato: ' + escapeHtml(voto_gradazione) + ' (' + escapeHtml(ente_gradazione || '') + ')</p>' : '') +
-    (note ? '<p style="color:#69f0ae; margin-top:8px; font-style:italic;">&#9998; ' + escapeHtml(note) + '</p>' : '') +
-    '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' + 
-      (firmato ? '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">FIRMATO</span>' : '') +
-      (coa ? '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">COA</span>' : '') +
-      (remark ? '<span style="background:#7b1fa2;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">SKETCH</span>' : '') +
-      (gradato ? '<span style="background:#69f0ae;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">GRADATO</span>' : '') +
-    '</div>';
-  document.getElementById('modalOverlay').classList.remove('hidden');
-}
-
-function closeModal(e) {
-  if (!e || e.target.id === 'modalOverlay') {
-    document.getElementById('modalOverlay').classList.add('hidden');
-  }
-}
-
-// ==================== UTILS ====================
-function editComic(c) {
-  editingId = c.id;
-
-  document.getElementById('titolo').value = c.titolo || '';
-  document.getElementById('categoria').value = c.categoria || 'Comics';
-  document.getElementById('numero').value = c.numero || '';
-  document.getElementById('anno').value = c.anno || '';
-  document.getElementById('publisher').value = c.publisher || '';
-  document.getElementById('disegnatore').value = c.disegnatore || '';
-  document.getElementById('lingua').value = c.lingua || 'Italiano';
-  document.getElementById('variant').value = c.variant || 'Standard';
-  document.getElementById('stato').value = c.stato || 'Non Specificato';
-  document.getElementById('firmato').checked = c.firmato || false;
-  document.getElementById('coa').checked = c.coa || false;
-  document.getElementById('remark').checked = c.remark || false;
-  document.getElementById('gradato').checked = c.gradato || false;
-  document.getElementById('note').value = c.note || '';
-
-  toggleGradazione();
-
-  if (c.gradato) {
-    document.getElementById('votoGradazione').value = c.voto_gradazione || '';
-    document.getElementById('enteGradazione').value = c.ente_gradazione || '';
-  }
-
-  if (c.immagine_url) {
-    const preview = document.getElementById('imagePreview');
-    preview.src = c.immagine_url;
-    preview.style.display = 'block';
-  }
-
-  document.getElementById('saveBtn').textContent = 'Aggiorna Fumetto';
-  document.getElementById('formTitle').textContent = 'Modifica albo';
-
-  switchTab('add');
-}
-
-function markDirty() {
-  formDirty = true;
-}
-
-function isFormDirty() {
-  const titolo = document.getElementById('titolo').value.trim();
-  const numero = document.getElementById('numero').value.trim();
-  const anno = document.getElementById('anno').value.trim();
-  const publisher = document.getElementById('publisher').value.trim();
-  const disegnatore = document.getElementById('disegnatore').value.trim();
-  const note = document.getElementById('note').value.trim();
-  return formDirty || titolo || numero || anno || publisher || disegnatore || note;
-}
-
-function resetFormDirty() {
-  formDirty = false;
+  qs('#saveBtn').textContent = 'Salva in Archivio';
+  qs('#formTitle').textContent = 'Aggiungi un nuovo albo';
 }
 
 function toggleGradazione() {
-  const gradato = document.getElementById('gradato').checked;
-  const fields = document.getElementById('gradazioneFields');
-  if (fields) {
-    fields.style.display = gradato ? 'block' : 'none';
-  }
+  qs('#gradazioneFields').classList.toggle('hidden', !qs('#gradato').checked);
 }
 
+// ==================== MODAL ====================
+function openModal(c) {
+  qs('#modalImg').src = c.immagine_url;
+  const tags = [
+    c.firmato && '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">FIRMATO</span>',
+    c.coa && '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">COA</span>',
+    c.remark && '<span style="background:#7b1fa2;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">SKETCH</span>',
+    c.gradato && '<span style="background:#69f0ae;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">GRADATO</span>'
+  ].filter(Boolean);
+  
+  qs('#modalMeta').innerHTML = `
+    <p><strong style="color:#fff;font-size:18px">${esc(c.titolo)}</strong></p>
+    <p><strong style="color:#69f0ae">${esc(c.categoria || 'Comics')}</strong></p>
+    <p>Issue: ${esc(c.numero || '-')}</p><p>Anno: ${esc(c.anno || '-')}</p>
+    <p>Publisher: ${esc(c.publisher || '-')}</p><p>Disegnatore: ${esc(c.disegnatore || '-')}</p>
+    <p>Tipo: ${esc(c.variant || '-')}</p><p>Lingua: ${esc(c.lingua || '-')}</p><p>Stato: ${esc(c.stato || '-')}</p>
+    ${c.gradato && c.voto_gradazione ? `<p>Gradato: ${esc(c.voto_gradazione)} (${esc(c.ente_gradazione)})</p>` : ''}
+    ${c.note ? `<p style="color:#69f0ae;margin-top:8px;font-style:italic">&#9998; ${esc(c.note)}</p>` : ''}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${tags.join('')}</div>
+  `;
+  qs('#modalOverlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'modalOverlay') qs('#modalOverlay').classList.add('hidden');
+}
+
+// ==================== EDIT ====================
+function editComic(c) {
+  editingId = c.id;
+  Object.entries({titolo:c.titolo,numero:c.numero,anno:c.anno,publisher:c.publisher,disegnatore:c.disegnatore,note:c.note}).forEach(([k,v]) => qs('#'+k).value = v || '');
+  qs('#categoria').value = c.categoria || 'Comics'; qs('#lingua').value = c.lingua || 'Italiano';
+  qs('#variant').value = c.variant || 'Standard'; qs('#stato').value = c.stato || 'Non Specificato';
+  ['firmato','coa','remark','gradato'].forEach(k => qs('#'+k).checked = c[k] || false);
+  toggleGradazione();
+  if (c.gradato) { qs('#votoGradazione').value = c.voto_gradazione || ''; qs('#enteGradazione').value = c.ente_gradazione || ''; }
+  if (c.immagine_url) { const p = qs('#imagePreview'); p.src = c.immagine_url; p.style.display = 'block'; }
+  qs('#saveBtn').textContent = 'Aggiorna Fumetto'; qs('#formTitle').textContent = 'Modifica albo';
+  switchTab('add');
+}
+
+function markDirty() { formDirty = true; }
+function isFormDirty() {
+  const fields = ['titolo','numero','anno','publisher','disegnatore','note'];
+  return formDirty || fields.some(f => qs('#'+f).value.trim());
+}
+function resetFormDirty() { formDirty = false; }
+
+// ==================== EXPORT ====================
 function exportCSV() {
-  if (allComics.length === 0) {
-    alert('Nessun fumetto da esportare!');
-    return;
-  }
-
+  if (!allComics.length) return alert('Nessun fumetto da esportare!');
   const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Note','Immagine'];
-  let csv = headers.join(';') + '\n';
-
-  for (let i = 0; i < allComics.length; i++) {
-    const c = allComics[i];
-    const row = [
-      c.titolo || '',
-      c.categoria || 'Comics',
-      c.numero || '',
-      c.anno || '',
-      c.publisher || '',
-      c.disegnatore || '',
-      c.lingua || '',
-      c.variant || '',
-      c.stato || '',
-      c.firmato ? 'Sì' : 'No',
-      c.coa ? 'Sì' : 'No',
-      c.remark ? 'Sì' : 'No',
-      c.gradato ? 'Sì' : 'No',
-      c.voto_gradazione || '',
-      c.ente_gradazione || '',
-      (c.note || '').replace(/\n/g, ' '),
-      c.immagine_url || ''
-    ];
-    csv += row.join(';') + '\n';
-  }
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'comic_deck_' + new Date().toISOString().split('T')[0] + '.csv';
-  link.click();
+  const rows = allComics.map(c => [
+    c.titolo||'', c.categoria||'Comics', c.numero||'', c.anno||'', c.publisher||'', c.disegnatore||'',
+    c.lingua||'', c.variant||'', c.stato||'', c.firmato?'Sì':'No', c.coa?'Sì':'No', c.remark?'Sì':'No',
+    c.gradato?'Sì':'No', c.voto_gradazione||'', c.ente_gradazione||'', (c.note||'').replace(/\n/g,' '), c.immagine_url||''
+  ].join(';'));
+  downloadBlob(new Blob([headers.join(';')+'\n'+rows.join('\n')], {type:'text/csv'}), `comic_deck_${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 function exportPDF() {
-  if (allComics.length === 0) {
-    alert('Nessun fumetto da esportare!');
-    return;
-  }
-
+  if (!allComics.length) return alert('Nessun fumetto da esportare!');
   const w = window.open('', '_blank');
-  if (!w) {
-    alert('Permetti i popup per esportare il PDF');
-    return;
-  }
-
-  let html = '<html><head><meta charset="utf-8"><title>Comic-Deck</title>';
-  html += '<style>body{font-family:Arial,sans-serif;padding:20px;} h1{color:#333;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px;} th{background:#69f0ae;} tr:nth-child(even){background:#f9f9f9;} .tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;margin:1px;}</style>';
-  html += '</head><body>';
-  html += '<h1>Comic-Deck - Collezione</h1>';
-  html += '<p>Esportato il: ' + new Date().toLocaleDateString('it-IT') + '</p>';
-  html += '<table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Note</th><th>Tag</th></tr></thead><tbody>';
-
-  for (let i = 0; i < allComics.length; i++) {
-    const c = allComics[i];
-    const tags = [];
-    if (c.firmato) tags.push('<span class="tag" style="background:#ffc107;">Firmato</span>');
-    if (c.coa) tags.push('<span class="tag" style="background:#1565c0;color:#fff;">COA</span>');
-    if (c.remark) tags.push('<span class="tag" style="background:#7b1fa2;color:#fff;">Sketch</span>');
-    if (c.gradato) tags.push('<span class="tag" style="background:#69f0ae;">Gradato ' + (c.voto_gradazione || '') + '</span>');
-
-    html += '<tr>';
-    html += '<td><strong>' + escapeHtml(c.titolo || '') + '</strong></td>';
-    html += '<td>' + escapeHtml(c.categoria || 'Comics') + '</td>';
-    html += '<td>' + escapeHtml(c.numero || '') + '</td>';
-    html += '<td>' + escapeHtml(c.anno || '') + '</td>';
-    html += '<td>' + escapeHtml(c.publisher || '') + '</td>';
-    html += '<td>' + escapeHtml(c.disegnatore || '') + '</td>';
-    html += '<td>' + escapeHtml(c.stato || '') + '</td>';
-    html += '<td>' + escapeHtml((c.note || '').substring(0, 100)) + '</td>';
-    html += '<td>' + tags.join(' ') + '</td>';
-    html += '</tr>';
-  }
-
-  html += '</tbody></table></body></html>';
-
-  w.document.write(html);
-  w.document.close();
-  setTimeout(function() { w.print(); }, 500);
+  if (!w) return alert('Permetti i popup');
+  const rows = allComics.map(c => {
+    const tags = [c.firmato&&'Firmato',c.coa&&'COA',c.remark&&'Sketch',c.gradato&&`Gradato ${c.voto_gradazione||''}`].filter(Boolean);
+    return `<tr><td><strong>${esc(c.titolo)}</strong></td><td>${esc(c.categoria||'Comics')}</td><td>${esc(c.numero)}</td><td>${esc(c.anno)}</td><td>${esc(c.publisher)}</td><td>${esc(c.disegnatore)}</td><td>${esc(c.stato)}</td><td>${esc((c.note||'').substring(0,100))}</td><td>${tags.join(' ')}</td></tr>`;
+  }).join('');
+  w.document.write(`<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#69f0ae}</style></head><body><h1>Comic-Deck</h1><p>${new Date().toLocaleDateString('it-IT')}</p><table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Note</th><th>Tag</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  w.document.close(); setTimeout(() => w.print(), 500);
 }
 
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+}
+
+// ==================== STATS ====================
+function showStats() {
+  const cont = qs('#statsContent');
+  if (!allComics.length) return cont.innerHTML = '<div class="empty-state">Nessun dato disponibile.</div>';
+  const count = (fn) => allComics.filter(fn).length;
+  const stats = [
+    {label:'Totale Elementi',value:allComics.length,big:true},
+    {label:'Comics',value:count(c=>(c.categoria||'Comics')==='Comics')},
+    {label:'Manga',value:count(c=>c.categoria==='Manga')},
+    {label:'Libri',value:count(c=>c.categoria==='Libri')},
+    {label:'Italiano',value:count(c=>(c.lingua||'Italiano')==='Italiano')},
+    {label:'English',value:count(c=>c.lingua==='English')},
+    {label:'Gradati',value:count(c=>c.gradato)},
+    {label:'Firmati',value:count(c=>c.firmato)},
+    {label:'COA',value:count(c=>c.coa)},
+    {label:'Sketch',value:count(c=>c.remark)}
+  ];
+  cont.innerHTML = `
+    <div class="stat-card"><span class="stat-label">${stats[0].label}</span><span class="stat-value big">${stats[0].value}</span></div>
+    <div class="stat-grid">${stats.slice(1).map(s=>`<div class="stat-card"><span class="stat-label">${s.label}</span><span class="stat-value">${s.value}</span></div>`).join('')}</div>
+  `;
+}
+
+// ==================== TABS & UTILS ====================
 function switchTab(tab) {
-  const currentAddHidden = document.getElementById('addView').classList.contains('hidden');
-  if (!currentAddHidden && tab !== 'add' && isFormDirty()) {
-    if (!confirm('Hai dati non salvati. Sei sicuro di voler uscire?')) {
-      return;
-    }
-    resetFormDirty();
-  }
-
-  document.getElementById('tabList').classList.toggle('active', tab === 'list');
-  document.getElementById('tabAdd').classList.toggle('active', tab === 'add');
-  document.getElementById('tabStats').classList.toggle('active', tab === 'stats');
-  document.getElementById('listView').classList.toggle('hidden', tab !== 'list');
-  document.getElementById('addView').classList.toggle('hidden', tab !== 'add');
-  document.getElementById('statsView').classList.toggle('hidden', tab !== 'stats');
-
+  if (!qs('#addView').classList.contains('hidden') && tab !== 'add' && isFormDirty() && !confirm('Hai dati non salvati. Uscire?')) return;
+  resetFormDirty();
+  ['list','add','stats'].forEach(t => {
+    qs('#tab'+t[0].toUpperCase()+t.slice(1)).classList.toggle('active', tab===t);
+    qs('#'+t+'View').classList.toggle('hidden', tab!==t);
+  });
   if (tab === 'list') loadComics();
   if (tab === 'stats') showStats();
 }
 
-function showStats() {
-  const container = document.getElementById('statsContent');
-
-  if (allComics.length === 0) {
-    container.innerHTML = '<div class="empty-state">Nessun dato disponibile. Aggiungi qualche fumetto!</div>';
-    return;
-  }
-
-  const total = allComics.length;
-  const comics = allComics.filter(c => (c.categoria || 'Comics') === 'Comics').length;
-  const manga = allComics.filter(c => c.categoria === 'Manga').length;
-  const libri = allComics.filter(c => c.categoria === 'Libri').length;
-  const italiano = allComics.filter(c => (c.lingua || 'Italiano') === 'Italiano').length;
-  const inglese = allComics.filter(c => c.lingua === 'English').length;
-  const gradati = allComics.filter(c => c.gradato).length;
-  const firmati = allComics.filter(c => c.firmato).length;
-  const coa = allComics.filter(c => c.coa).length;
-  const remark = allComics.filter(c => c.remark).length;
-
-  container.innerHTML = 
-    '<div class="stat-card">' +
-      '<span class="stat-label">Totale Elementi</span>' +
-      '<span class="stat-value big">' + total + '</span>' +
-    '</div>' +
-    '<div class="stat-grid">' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Comics</span>' +
-        '<span class="stat-value">' + comics + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Manga</span>' +
-        '<span class="stat-value">' + manga + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Libri</span>' +
-        '<span class="stat-value">' + libri + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Italiano</span>' +
-        '<span class="stat-value">' + italiano + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">English</span>' +
-        '<span class="stat-value">' + inglese + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Gradati</span>' +
-        '<span class="stat-value">' + gradati + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Firmati</span>' +
-        '<span class="stat-value">' + firmati + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">COA</span>' +
-        '<span class="stat-value">' + coa + '</span>' +
-      '</div>' +
-      '<div class="stat-card">' +
-        '<span class="stat-label">Sketch</span>' +
-        '<span class="stat-value">' + remark + '</span>' +
-      '</div>' +
-    '</div>';
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+function esc(t) {
+  if (!t) return '';
+  const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
 }
 
 // ==================== PULL TO REFRESH ====================
-let pullStartY = 0;
-let pullCurrentY = 0;
-let isPulling = false;
+let pullStartY = 0, pullCurrentY = 0, isPulling = false;
+const listView = qs('#listView'), pullInd = qs('#pullIndicator');
 
-const listView = document.getElementById('listView');
-const pullIndicator = document.getElementById('pullIndicator');
+listView?.addEventListener('touchstart', e => {
+  if (listView.scrollTop === 0) { pullStartY = e.touches[0].clientY; isPulling = true; }
+}, {passive:true});
 
-if (listView) {
-  listView.addEventListener('touchstart', function(e) {
-    if (listView.scrollTop === 0) {
-      pullStartY = e.touches[0].clientY;
-      isPulling = true;
-    }
-  }, { passive: true });
+listView?.addEventListener('touchmove', e => {
+  if (!isPulling) return;
+  pullCurrentY = e.touches[0].clientY;
+  if (pullCurrentY - pullStartY > 60 && listView.scrollTop <= 0) pullInd.classList.remove('hidden');
+}, {passive:true});
 
-  listView.addEventListener('touchmove', function(e) {
-    if (!isPulling) return;
-    pullCurrentY = e.touches[0].clientY;
-    const diff = pullCurrentY - pullStartY;
-    if (diff > 60 && listView.scrollTop <= 0) {
-      pullIndicator.style.display = 'block';
-    }
-  }, { passive: true });
-
-  listView.addEventListener('touchend', function(e) {
-    if (!isPulling) return;
-    const diff = pullCurrentY - pullStartY;
-    if (diff > 80 && listView.scrollTop <= 0) {
-      pullIndicator.textContent = 'Aggiornamento...';
-      loadComics().then(function() {
-        pullIndicator.style.display = 'none';
-        pullIndicator.textContent = '↓ Rilascia per aggiornare';
-      });
-    } else {
-      pullIndicator.style.display = 'none';
-    }
-    isPulling = false;
-    pullStartY = 0;
-    pullCurrentY = 0;
-  });
-}
+listView?.addEventListener('touchend', () => {
+  if (!isPulling) return;
+  if (pullCurrentY - pullStartY > 80 && listView.scrollTop <= 0) {
+    pullInd.textContent = 'Aggiornamento...';
+    loadComics().then(() => { pullInd.classList.add('hidden'); pullInd.textContent = '↓ Rilascia per aggiornare'; });
+  } else pullInd.classList.add('hidden');
+  isPulling = false; pullStartY = 0; pullCurrentY = 0;
+});
 
 // ==================== INIT ====================
 checkSession();
