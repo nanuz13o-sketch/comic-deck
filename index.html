@@ -78,17 +78,22 @@ textarea{resize:vertical;min-height:80px}
 .hidden{display:none!important}
 .empty-state{text-align:center;padding:40px;color:#666;font-style:italic}
 
-.stat-card{background:#2a2a2a;border-radius:10px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.stat-card .stat-label{color:#888;font-size:14px}
+/* STATS */
+.stat-total-card{background:#2a2a2a;border-radius:10px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.stat-total-card .stat-label{color:#888;font-size:14px}
+.stat-total-card .stat-value{color:#69f0ae;font-size:32px;font-weight:700}
+
+.stat-group{background:#1e1e1e;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #333}
+.stat-group-title{color:#69f0ae;font-size:16px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333;padding-bottom:8px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:#2a2a2a;border-radius:10px;padding:14px;text-align:center}
+.stat-card .stat-label{color:#888;font-size:13px;margin-bottom:4px;display:block}
 .stat-card .stat-value{color:#69f0ae;font-size:22px;font-weight:700}
-.stat-card .stat-value.big{font-size:32px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.stat-grid .stat-card{flex-direction:column;text-align:center}
-.stat-grid .stat-card .stat-label{margin-bottom:4px}
 
 .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .filters select{flex:1;min-width:100px;margin-bottom:0}
 </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -263,7 +268,7 @@ function renderComics(comics) {
 
 function buildCard(c) {
   const card = document.createElement('div'); card.className = 'comic-card';
-  
+
   const tags = [];
   if (c.firmato) tags.push('signed');
   if (c.coa) tags.push('coa');
@@ -293,7 +298,7 @@ function buildCard(c) {
   const info = document.createElement('div'); info.className = 'comic-info';
   const num = c.numero ? `<span style="color:#69f0ae;font-weight:700">#${esc(c.numero)}</span> ` : '';
   const notePreview = (c.note || '').length > 50 ? esc(c.note.substring(0, 50)) + '...' : esc(c.note || '');
-  
+
   info.innerHTML = `
     <h3>${num}${esc(c.titolo || 'Titolo sconosciuto')}</h3>
     <p><strong style="color:#69f0ae">${esc(c.categoria || 'Comics')}</strong></p>
@@ -313,12 +318,12 @@ function buildCard(c) {
 function searchComics() {
   const q = qs('#searchInput').value.toLowerCase().trim();
   const tipo = qs('#filterTipo').value, lingua = qs('#filterLingua').value, anno = qs('#filterAnno').value;
-  
+
   let f = allComics.filter(c => !q || [c.titolo,c.publisher,c.numero,c.anno,c.disegnatore,c.note].some(v => (v||'').toLowerCase().includes(q)));
   if (tipo) f = f.filter(c => (c.categoria || 'Comics') === tipo);
   if (lingua) f = f.filter(c => (c.lingua || 'Italiano') === lingua);
   if (anno) f = f.filter(c => c.anno === anno);
-  
+
   f.sort((a,b) => (parseInt(a.numero)||0) - (parseInt(b.numero)||0) || (a.titolo||'').localeCompare(b.titolo||''));
   renderComics(f);
 }
@@ -399,7 +404,7 @@ async function saveComic() {
   }
 
   if (result.error) return msg.innerHTML = `<span class="error">Errore: ${result.error.message}</span>`;
-  
+
   resetForm();
   msg.innerHTML = `<span class="success">${isEditing ? 'Aggiornato' : 'Salvato'} con successo!</span>`;
   resetFormDirty();
@@ -431,7 +436,7 @@ function openModal(c) {
     c.remark && '<span style="background:#7b1fa2;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">SKETCH</span>',
     c.gradato && '<span style="background:#69f0ae;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">GRADATO</span>'
   ].filter(Boolean);
-  
+
   qs('#modalMeta').innerHTML = `
     <p><strong style="color:#fff;font-size:18px">${esc(c.titolo)}</strong></p>
     <p><strong style="color:#69f0ae">${esc(c.categoria || 'Comics')}</strong></p>
@@ -498,26 +503,59 @@ function downloadBlob(blob, filename) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
 }
 
-// ==================== STATS ====================
+// ==================== STATS (GRUPPI) ====================
 function showStats() {
   const cont = qs('#statsContent');
   if (!allComics.length) return cont.innerHTML = '<div class="empty-state">Nessun dato disponibile.</div>';
   const count = (fn) => allComics.filter(fn).length;
-  const stats = [
-    {label:'Totale Elementi',value:allComics.length,big:true},
-    {label:'Comics',value:count(c=>(c.categoria||'Comics')==='Comics')},
-    {label:'Manga',value:count(c=>c.categoria==='Manga')},
-    {label:'Libri',value:count(c=>c.categoria==='Libri')},
-    {label:'Italiano',value:count(c=>(c.lingua||'Italiano')==='Italiano')},
-    {label:'English',value:count(c=>c.lingua==='English')},
-    {label:'Gradati',value:count(c=>c.gradato)},
-    {label:'Firmati',value:count(c=>c.firmato)},
-    {label:'COA',value:count(c=>c.coa)},
-    {label:'Sketch',value:count(c=>c.remark)}
+
+  const groups = [
+    {
+      title: 'Tipologia',
+      items: [
+        { label: 'Comics', value: count(c => (c.categoria || 'Comics') === 'Comics') },
+        { label: 'Manga', value: count(c => c.categoria === 'Manga') },
+        { label: 'Libri', value: count(c => c.categoria === 'Libri') }
+      ]
+    },
+    {
+      title: 'Lingua',
+      items: [
+        { label: 'Italiano', value: count(c => (c.lingua || 'Italiano') === 'Italiano') },
+        { label: 'English', value: count(c => c.lingua === 'English') }
+      ]
+    },
+    {
+      title: 'Extra',
+      items: [
+        { label: 'Gradati', value: count(c => c.gradato) },
+        { label: 'Firmati', value: count(c => c.firmato) },
+        { label: 'COA', value: count(c => c.coa) },
+        { label: 'Sketch', value: count(c => c.remark) }
+      ]
+    }
   ];
+
+  const total = allComics.length;
+
   cont.innerHTML = `
-    <div class="stat-card"><span class="stat-label">${stats[0].label}</span><span class="stat-value big">${stats[0].value}</span></div>
-    <div class="stat-grid">${stats.slice(1).map(s=>`<div class="stat-card"><span class="stat-label">${s.label}</span><span class="stat-value">${s.value}</span></div>`).join('')}</div>
+    <div class="stat-total-card">
+      <span class="stat-label">Totale Elementi</span>
+      <span class="stat-value">${total}</span>
+    </div>
+    ${groups.map(g => `
+      <div class="stat-group">
+        <div class="stat-group-title">${g.title}</div>
+        <div class="stat-grid">
+          ${g.items.map(item => `
+            <div class="stat-card">
+              <span class="stat-label">${item.label}</span>
+              <span class="stat-value">${item.value}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('')}
   `;
 }
 
