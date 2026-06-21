@@ -334,6 +334,23 @@ select {
     <!-- LIST VIEW -->
     <div id="listView">
       <input type="text" class="search-bar" id="searchInput" placeholder="Cerca per titolo, publisher, numero, anno, disegnatore..." oninput="searchComics()">
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <select id="filterTipo" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
+          <option value="">Tutti i tipi</option>
+          <option value="Comics">Comics</option>
+          <option value="Manga">Manga</option>
+          <option value="Libri">Libri</option>
+        </select>
+        <select id="filterLingua" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
+          <option value="">Tutte le lingue</option>
+          <option value="Italiano">Italiano</option>
+          <option value="English">English</option>
+          <option value="Altro">Altro</option>
+        </select>
+        <select id="filterAnno" onchange="searchComics()" style="flex:1; min-width:100px; margin-bottom:0;">
+          <option value="">Tutti gli anni</option>
+        </select>
+      </div>
       <div style="display:flex; gap:8px; margin-bottom:12px;">
         <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportCSV()">&#128190; CSV</button>
         <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportPDF()">&#128196; PDF</button>
@@ -526,6 +543,7 @@ async function loadComics() {
 
   console.log('Loaded comics count:', data ? data.length : 0, 'First item:', data && data[0] ? data[0].titolo : 'none');
   allComics = data || [];
+  populateAnnoFilter();
   renderComics(allComics);
 }
 
@@ -540,6 +558,7 @@ function renderComics(comics) {
 
   for (let i = 0; i < comics.length; i++) {
     const c = comics[i];
+    const numDisplay = c.numero ? '<span style="color:#69f0ae;font-weight:700;">#' + escapeHtml(c.numero) + '</span> ' : '';
     const card = document.createElement('div');
     card.className = 'comic-card';
 
@@ -584,7 +603,7 @@ function renderComics(comics) {
     const info = document.createElement('div');
     info.className = 'comic-info';
     info.innerHTML = 
-      '<h3>' + escapeHtml(c.titolo || 'Titolo sconosciuto') + '</h3>' +
+      '<h3>' + numDisplay + escapeHtml(c.titolo || 'Titolo sconosciuto') + '</h3>' +
       '<p><strong style="color:#69f0ae;">' + escapeHtml(c.categoria || 'Comics') + '</strong></p>' +
       '<p>Issue: ' + escapeHtml(c.numero || '-') + ' Year: ' + escapeHtml(c.anno || '-') + '</p>' +
       '<p>Publisher: ' + escapeHtml(c.publisher || '-') + '</p>' +
@@ -601,19 +620,67 @@ function renderComics(comics) {
 
 function searchComics() {
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
-  if (!query) {
-    renderComics(allComics);
-    return;
+  const filterTipo = document.getElementById('filterTipo').value;
+  const filterLingua = document.getElementById('filterLingua').value;
+  const filterAnno = document.getElementById('filterAnno').value;
+
+  let filtered = allComics;
+
+  // Filtro testo
+  if (query) {
+    filtered = filtered.filter(c => 
+      (c.titolo || '').toLowerCase().includes(query) ||
+      (c.publisher || '').toLowerCase().includes(query) ||
+      (c.numero || '').toLowerCase().includes(query) ||
+      (c.anno || '').toLowerCase().includes(query) ||
+      (c.disegnatore || '').toLowerCase().includes(query)
+    );
   }
 
-  const filtered = allComics.filter(c => 
-    (c.titolo || '').toLowerCase().includes(query) ||
-    (c.publisher || '').toLowerCase().includes(query) ||
-    (c.numero || '').toLowerCase().includes(query) ||
-    (c.anno || '').toLowerCase().includes(query) ||
-    (c.disegnatore || '').toLowerCase().includes(query)
-  );
+  // Filtro tipo
+  if (filterTipo) {
+    filtered = filtered.filter(c => (c.categoria || 'Comics') === filterTipo);
+  }
+
+  // Filtro lingua
+  if (filterLingua) {
+    filtered = filtered.filter(c => (c.lingua || 'Italiano') === filterLingua);
+  }
+
+  // Filtro anno
+  if (filterAnno) {
+    filtered = filtered.filter(c => c.anno === filterAnno);
+  }
+
+  // Ordinamento per numero (numerico se possibile)
+  filtered.sort((a, b) => {
+    const numA = parseInt(a.numero) || 0;
+    const numB = parseInt(b.numero) || 0;
+    if (numA !== numB) return numA - numB;
+    return (a.titolo || '').localeCompare(b.titolo || '');
+  });
+
   renderComics(filtered);
+}
+
+function populateAnnoFilter() {
+  const select = document.getElementById('filterAnno');
+  if (!select) return;
+
+  // Rimuovi opzioni esistenti tranne la prima
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+
+  // Estrai anni unici e ordinati
+  const anni = [...new Set(allComics.map(c => c.anno).filter(a => a))].sort((a, b) => b - a);
+
+  for (const anno of anni) {
+    const opt = document.createElement('option');
+    opt.value = anno;
+    opt.textContent = anno;
+    select.appendChild(opt);
+  }
 }
 
 async function deleteComic(id, titolo) {
