@@ -315,7 +315,12 @@ select {
           </div>
         </div>
         <img id="imagePreview" class="image-preview" style="image-orientation: from-image;">
-        <input type="text" id="titolo" placeholder="Titolo Fumetto *">
+        <input type="text" id="titolo" placeholder="Titolo *">
+        <select id="categoria">
+          <option value="Comics">Comics</option>
+          <option value="Manga">Manga</option>
+          <option value="Libri">Libri</option>
+        </select>
         <div class="form-row">
           <input type="number" id="numero" placeholder="Numero / Issue" min="0">
           <input type="number" id="anno" placeholder="Anno" min="1900" max="2100">
@@ -514,7 +519,7 @@ function renderComics(comics) {
       img.src = c.immagine_url;
       img.className = 'comic-thumb';
       img.onclick = function() {
-        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato);
+        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria);
       };
       card.appendChild(img);
     } else {
@@ -529,6 +534,7 @@ function renderComics(comics) {
     info.className = 'comic-info';
     info.innerHTML = 
       '<h3>' + escapeHtml(c.titolo || 'Titolo sconosciuto') + '</h3>' +
+      '<p><strong style="color:#69f0ae;">' + escapeHtml(c.categoria || 'Comics') + '</strong></p>' +
       '<p>Issue: ' + escapeHtml(c.numero || '-') + ' Year: ' + escapeHtml(c.anno || '-') + '</p>' +
       '<p>Publisher: ' + escapeHtml(c.publisher || '-') + '</p>' +
       '<p>Disegnatore: ' + escapeHtml(c.disegnatore || '-') + '</p>' +
@@ -627,6 +633,7 @@ async function saveComic() {
   const anno = document.getElementById('anno').value.trim();
   const publisher = document.getElementById('publisher').value.trim();
   const disegnatore = document.getElementById('disegnatore').value.trim();
+  const categoria = document.getElementById('categoria').value;
   const lingua = document.getElementById('lingua').value;
   const variant = document.getElementById('variant').value;
   const stato = document.getElementById('stato').value || 'Non Specificato';
@@ -675,6 +682,7 @@ async function saveComic() {
       anno: anno,
       publisher: publisher,
       disegnatore: disegnatore,
+      categoria: categoria,
       lingua: lingua,
       variant: variant,
       stato: stato,
@@ -700,6 +708,7 @@ async function saveComic() {
       anno: anno,
       publisher: publisher,
       disegnatore: disegnatore,
+      categoria: categoria,
       lingua: lingua,
       variant: variant,
       stato: stato,
@@ -726,6 +735,7 @@ async function saveComic() {
   document.getElementById('anno').value = '';
   document.getElementById('publisher').value = '';
   document.getElementById('disegnatore').value = '';
+  document.getElementById('categoria').value = 'Comics';
   document.getElementById('lingua').value = 'Italiano';
   document.getElementById('variant').value = 'Standard';
   document.getElementById('stato').value = 'Non Specificato';
@@ -754,10 +764,11 @@ async function saveComic() {
 }
 
 // ==================== MODAL ====================
-function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato) {
+function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria) {
   document.getElementById('modalImg').src = imgUrl;
   document.getElementById('modalMeta').innerHTML = 
     '<p><strong style="color:#fff;font-size:18px;">' + titolo + '</strong></p>' +
+    '<p><strong style="color:#69f0ae;">' + (categoria || 'Comics') + '</strong></p>' +
     '<p>Issue: ' + (numero || '-') + '</p>' +
     '<p>Anno: ' + (anno || '-') + '</p>' +
     '<p>Publisher: ' + (publisher || '-') + '</p>' +
@@ -786,6 +797,7 @@ function editComic(c) {
 
   // Precompila il form
   document.getElementById('titolo').value = c.titolo || '';
+  document.getElementById('categoria').value = c.categoria || 'Comics';
   document.getElementById('numero').value = c.numero || '';
   document.getElementById('anno').value = c.anno || '';
   document.getElementById('publisher').value = c.publisher || '';
@@ -824,6 +836,7 @@ function editComic(c) {
 
   // Precompila il form
   document.getElementById('titolo').value = c.titolo || '';
+  document.getElementById('categoria').value = c.categoria || 'Comics';
   document.getElementById('numero').value = c.numero || '';
   document.getElementById('anno').value = c.anno || '';
   document.getElementById('publisher').value = c.publisher || '';
