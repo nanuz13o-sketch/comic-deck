@@ -534,7 +534,7 @@ function showMainScreen() {
 async function loadComics() {
   const { data, error } = await sb
     .from('fumetti')
-    .select('*', { head: false })
+    .select('id, titolo, numero, anno, publisher, disegnatore, lingua, variant, stato, firmato, coa, remark, gradato, voto_gradazione, ente_gradazione, immagine_url, categoria, note, user_id, created_at')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
@@ -614,7 +614,7 @@ function renderComics(comics) {
       '<p>Tipo: ' + escapeHtml(c.variant) + ' ' + escapeHtml(c.lingua) + '</p>' +
       '<p>Stato: ' + escapeHtml(c.stato) + '</p>' +
       (c.gradato && c.voto_gradazione ? '<p>Gradato: ' + escapeHtml(c.voto_gradazione) + ' (' + escapeHtml(c.ente_gradazione) + ')</p>' : '') +
-      (c.note ? '<p style="color:#69f0ae; font-style:italic;">&#9998; ' + escapeHtml(c.note.substring(0, 50)) + (c.note.length > 50 ? '...' : '') + '</p>' : '') +
+      ((c.note || '') ? '<p style="color:#69f0ae; font-style:italic;">&#9998; ' + escapeHtml((c.note || '').substring(0, 50)) + ((c.note || '').length > 50 ? '...' : '') + '</p>' : '') +
       '<div class="comic-tags">' + tags.join('') + '</div>';
     card.appendChild(info);
 
