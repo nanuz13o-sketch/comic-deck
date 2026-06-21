@@ -296,7 +296,6 @@ select {
 }
 </style>
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
 
@@ -690,7 +689,7 @@ function populateAnnoFilter() {
 }
 
 async function deleteComic(id, titolo) {
-  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall'archivio?\nL'immagine verrà cancellata permanentemente.')) {
+  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall\'archivio?\nL\'immagine verrà cancellata permanentemente.')) {
     return;
   }
 
@@ -703,7 +702,7 @@ async function deleteComic(id, titolo) {
     .eq('user_id', currentUser.id);
 
   if (dbError) {
-    alert('Errore nell'eliminazione: ' + dbError.message);
+    alert('Errore nell\'eliminazione: ' + dbError.message);
     return;
   }
 
@@ -793,6 +792,9 @@ async function saveComic() {
 
     const { data: urlData } = sb.storage.from('copertine').getPublicUrl(fileName);
     imageUrl = urlData.publicUrl;
+    
+    // Pulisci l'input file dopo l'upload
+    fileInput.value = '';
   }
 
   let dbError;
@@ -841,7 +843,8 @@ async function saveComic() {
       gradato: gradato,
       voto_gradazione: votoGradazione,
       ente_gradazione: enteGradazione,
-      note: note
+      note: note,
+      immagine_url: imageUrl
     });
     dbError = result.error;
   }
