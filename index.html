@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Comic-Deck</title>
-<!-- Usiamo un CDN alternativo per evitare il tracking prevention -->
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -297,6 +296,7 @@ select {
 }
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -362,7 +362,7 @@ select {
     <!-- ADD VIEW -->
     <div id="addView" class="hidden">
       <div class="form-section" oninput="markDirty()" onchange="markDirty()">
-        <h2>Aggiungi un nuovo albo</h2>
+        <h2 id="formTitle">Aggiungi un nuovo albo</h2>
         <div class="file-input-wrapper">
           <div style="display:flex; justify-content:center; gap:16px; margin-bottom:12px;">
             <label style="cursor:pointer; width:56px; height:56px; border-radius:50%; background:#333; display:flex; align-items:center; justify-content:center; font-size:24px; color:#69f0ae; border:2px solid #69f0ae;" title="Scatta Foto">
@@ -593,7 +593,7 @@ function renderComics(comics) {
       img.src = c.immagine_url;
       img.className = 'comic-thumb';
       img.onclick = function() {
-        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria, c.note);
+        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria, c.note, c.voto_gradazione, c.ente_gradazione);
       };
       card.appendChild(img);
     } else {
@@ -638,7 +638,8 @@ function searchComics() {
       (c.publisher || '').toLowerCase().includes(query) ||
       (c.numero || '').toLowerCase().includes(query) ||
       (c.anno || '').toLowerCase().includes(query) ||
-      (c.disegnatore || '').toLowerCase().includes(query)
+      (c.disegnatore || '').toLowerCase().includes(query) ||
+      (c.note || '').toLowerCase().includes(query)
     );
   }
 
@@ -689,7 +690,7 @@ function populateAnnoFilter() {
 }
 
 async function deleteComic(id, titolo) {
-  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall\'archivio?\nL\'immagine verrà cancellata permanentemente.')) {
+  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall'archivio?\nL'immagine verrà cancellata permanentemente.')) {
     return;
   }
 
@@ -702,7 +703,7 @@ async function deleteComic(id, titolo) {
     .eq('user_id', currentUser.id);
 
   if (dbError) {
-    alert('Errore nell\'eliminazione: ' + dbError.message);
+    alert('Errore nell'eliminazione: ' + dbError.message);
     return;
   }
 
@@ -724,7 +725,6 @@ function previewImage(inputElement) {
     reader.onload = function(e) {
       preview.src = e.target.result;
       preview.style.display = 'block';
-      // Correggi orientamento usando EXIF se disponibile
       fixOrientation(preview, input.files[0]);
     };
     reader.readAsDataURL(input.files[0]);
@@ -732,9 +732,7 @@ function previewImage(inputElement) {
 }
 
 function fixOrientation(img, file) {
-  // Se il browser supporta image-orientation, usiamo quello
   img.style.imageOrientation = 'from-image';
-  // Altrimenti proviamo a leggere EXIF
   if (window.EXIF || typeof EXIF !== 'undefined') {
     EXIF.getData(file, function() {
       const orientation = EXIF.getTag(this, 'Orientation');
@@ -766,6 +764,7 @@ async function saveComic() {
   const gradato = document.getElementById('gradato').checked;
   const votoGradazione = gradato ? (document.getElementById('votoGradazione').value.trim() || '') : '';
   const enteGradazione = gradato ? (document.getElementById('enteGradazione').value || '') : '';
+  const note = document.getElementById('note').value.trim();
   const fileInputCamera = document.getElementById('coverInputCamera');
   const fileInputGallery = document.getElementById('coverInputGallery');
   const fileInput = (fileInputCamera.files && fileInputCamera.files[0]) ? fileInputCamera : fileInputGallery;
@@ -814,7 +813,8 @@ async function saveComic() {
       remark: remark,
       gradato: gradato,
       voto_gradazione: votoGradazione,
-      ente_gradazione: enteGradazione
+      ente_gradazione: enteGradazione,
+      note: note
     };
     if (imageUrl) updateData.immagine_url = imageUrl;
 
@@ -854,6 +854,20 @@ async function saveComic() {
   }
   console.log('Update success, editingId:', editingId, 'isEditing:', isEditing);
 
+  resetForm();
+
+  msg.innerHTML = '<span class="success">' + (isEditing ? 'Aggiornato' : 'Salvato') + ' con successo!</span>';
+  resetFormDirty();
+  setTimeout(function() { msg.innerHTML = ''; }, 3000);
+
+  setTimeout(function() {
+    switchTab('list');
+    allComics = [];
+    loadComics();
+  }, 800);
+}
+
+function resetForm() {
   document.getElementById('titolo').value = '';
   document.getElementById('numero').value = '';
   document.getElementById('anno').value = '';
@@ -873,35 +887,27 @@ async function saveComic() {
   document.getElementById('gradazioneFields').style.display = 'none';
   document.getElementById('coverInputCamera').value = '';
   document.getElementById('coverInputGallery').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
   editingId = null;
   document.getElementById('saveBtn').textContent = 'Salva in Archivio';
-  document.getElementById('imagePreview').style.display = 'none';
-
-  msg.innerHTML = '<span class="success">' + (isEditing ? 'Aggiornato' : 'Salvato') + ' con successo!</span>';
-  resetFormDirty();
-  setTimeout(function() { msg.innerHTML = ''; }, 3000);
-
-  setTimeout(function() {
-    switchTab('list');
-    // Forza refresh svuotando la cache locale
-    allComics = [];
-    loadComics();
-  }, 800);
+  document.getElementById('formTitle').textContent = 'Aggiungi un nuovo albo';
 }
 
 // ==================== MODAL ====================
-function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria, note) {
+function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria, note, voto_gradazione, ente_gradazione) {
   document.getElementById('modalImg').src = imgUrl;
   document.getElementById('modalMeta').innerHTML = 
-    '<p><strong style="color:#fff;font-size:18px;">' + titolo + '</strong></p>' +
-    '<p><strong style="color:#69f0ae;">' + (categoria || 'Comics') + '</strong></p>' +
-    '<p>Issue: ' + (numero || '-') + '</p>' +
-    '<p>Anno: ' + (anno || '-') + '</p>' +
-    '<p>Publisher: ' + (publisher || '-') + '</p>' +
-    '<p>Disegnatore: ' + (disegnatore || '-') + '</p>' +
-    '<p>Tipo: ' + variant + '</p>' +
-    '<p>Lingua: ' + lingua + '</p>' +
-    '<p>Stato: ' + stato + '</p>' +
+    '<p><strong style="color:#fff;font-size:18px;">' + escapeHtml(titolo || '') + '</strong></p>' +
+    '<p><strong style="color:#69f0ae;">' + escapeHtml(categoria || 'Comics') + '</strong></p>' +
+    '<p>Issue: ' + escapeHtml(numero || '-') + '</p>' +
+    '<p>Anno: ' + escapeHtml(anno || '-') + '</p>' +
+    '<p>Publisher: ' + escapeHtml(publisher || '-') + '</p>' +
+    '<p>Disegnatore: ' + escapeHtml(disegnatore || '-') + '</p>' +
+    '<p>Tipo: ' + escapeHtml(variant || '-') + '</p>' +
+    '<p>Lingua: ' + escapeHtml(lingua || '-') + '</p>' +
+    '<p>Stato: ' + escapeHtml(stato || '-') + '</p>' +
+    (gradato && voto_gradazione ? '<p>Gradato: ' + escapeHtml(voto_gradazione) + ' (' + escapeHtml(ente_gradazione || '') + ')</p>' : '') +
+    (note ? '<p style="color:#69f0ae; margin-top:8px; font-style:italic;">&#9998; ' + escapeHtml(note) + '</p>' : '') +
     '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' + 
       (firmato ? '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">FIRMATO</span>' : '') +
       (coa ? '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">COA</span>' : '') +
@@ -921,7 +927,6 @@ function closeModal(e) {
 function editComic(c) {
   editingId = c.id;
 
-  // Precompila il form
   document.getElementById('titolo').value = c.titolo || '';
   document.getElementById('categoria').value = c.categoria || 'Comics';
   document.getElementById('numero').value = c.numero || '';
@@ -944,8 +949,14 @@ function editComic(c) {
     document.getElementById('enteGradazione').value = c.ente_gradazione || '';
   }
 
-  // Cambia testo pulsante
+  if (c.immagine_url) {
+    const preview = document.getElementById('imagePreview');
+    preview.src = c.immagine_url;
+    preview.style.display = 'block';
+  }
+
   document.getElementById('saveBtn').textContent = 'Aggiorna Fumetto';
+  document.getElementById('formTitle').textContent = 'Modifica albo';
 
   switchTab('add');
 }
@@ -960,64 +971,8 @@ function isFormDirty() {
   const anno = document.getElementById('anno').value.trim();
   const publisher = document.getElementById('publisher').value.trim();
   const disegnatore = document.getElementById('disegnatore').value.trim();
-  return formDirty || titolo || numero || anno || publisher || disegnatore;
-}
-
-function resetFormDirty() {
-  formDirty = false;
-}
-
-function toggleGradazione() {
-  const gradato = document.getElementById('gradato').checked;
-  const fields = document.getElementById('gradazioneFields');
-  if (fields) {
-    fields.style.display = gradato ? 'block' : 'none';
-  }
-}
-
-function editComic(c) {
-  editingId = c.id;
-
-  // Precompila il form
-  document.getElementById('titolo').value = c.titolo || '';
-  document.getElementById('categoria').value = c.categoria || 'Comics';
-  document.getElementById('numero').value = c.numero || '';
-  document.getElementById('anno').value = c.anno || '';
-  document.getElementById('publisher').value = c.publisher || '';
-  document.getElementById('disegnatore').value = c.disegnatore || '';
-  document.getElementById('lingua').value = c.lingua || 'Italiano';
-  document.getElementById('variant').value = c.variant || 'Standard';
-  document.getElementById('stato').value = c.stato || 'Non Specificato';
-  document.getElementById('firmato').checked = c.firmato || false;
-  document.getElementById('coa').checked = c.coa || false;
-  document.getElementById('remark').checked = c.remark || false;
-  document.getElementById('gradato').checked = c.gradato || false;
-  document.getElementById('note').value = c.note || '';
-
-  toggleGradazione();
-
-  if (c.gradato) {
-    document.getElementById('votoGradazione').value = c.voto_gradazione || '';
-    document.getElementById('enteGradazione').value = c.ente_gradazione || '';
-  }
-
-  // Cambia testo pulsante
-  document.getElementById('saveBtn').textContent = 'Aggiorna Fumetto';
-
-  switchTab('add');
-}
-
-function markDirty() {
-  formDirty = true;
-}
-
-function isFormDirty() {
-  const titolo = document.getElementById('titolo').value.trim();
-  const numero = document.getElementById('numero').value.trim();
-  const anno = document.getElementById('anno').value.trim();
-  const publisher = document.getElementById('publisher').value.trim();
-  const disegnatore = document.getElementById('disegnatore').value.trim();
-  return formDirty || titolo || numero || anno || publisher || disegnatore;
+  const note = document.getElementById('note').value.trim();
+  return formDirty || titolo || numero || anno || publisher || disegnatore || note;
 }
 
 function resetFormDirty() {
@@ -1038,7 +993,7 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Immagine'];
+  const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Note','Immagine'];
   let csv = headers.join(';') + '\n';
 
   for (let i = 0; i < allComics.length; i++) {
@@ -1059,6 +1014,7 @@ function exportCSV() {
       c.gradato ? 'Sì' : 'No',
       c.voto_gradazione || '',
       c.ente_gradazione || '',
+      (c.note || '').replace(/\n/g, ' '),
       c.immagine_url || ''
     ];
     csv += row.join(';') + '\n';
@@ -1077,7 +1033,6 @@ function exportPDF() {
     return;
   }
 
-  // Apri una nuova finestra con la tabella e avvia la stampa/PDF
   const w = window.open('', '_blank');
   if (!w) {
     alert('Permetti i popup per esportare il PDF');
@@ -1089,7 +1044,7 @@ function exportPDF() {
   html += '</head><body>';
   html += '<h1>Comic-Deck - Collezione</h1>';
   html += '<p>Esportato il: ' + new Date().toLocaleDateString('it-IT') + '</p>';
-  html += '<table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Tag</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Note</th><th>Tag</th></tr></thead><tbody>';
 
   for (let i = 0; i < allComics.length; i++) {
     const c = allComics[i];
@@ -1107,6 +1062,7 @@ function exportPDF() {
     html += '<td>' + escapeHtml(c.publisher || '') + '</td>';
     html += '<td>' + escapeHtml(c.disegnatore || '') + '</td>';
     html += '<td>' + escapeHtml(c.stato || '') + '</td>';
+    html += '<td>' + escapeHtml((c.note || '').substring(0, 100)) + '</td>';
     html += '<td>' + tags.join(' ') + '</td>';
     html += '</tr>';
   }
@@ -1119,11 +1075,10 @@ function exportPDF() {
 }
 
 function switchTab(tab) {
-  // Se sto lasciando il form con dati non salvati, chiedi conferma
   const currentAddHidden = document.getElementById('addView').classList.contains('hidden');
   if (!currentAddHidden && tab !== 'add' && isFormDirty()) {
     if (!confirm('Hai dati non salvati. Sei sicuro di voler uscire?')) {
-      return; // Annulla il cambio tab
+      return;
     }
     resetFormDirty();
   }
