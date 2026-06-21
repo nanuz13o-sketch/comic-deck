@@ -52,6 +52,9 @@ input:focus { outline: none; border-color: #69f0ae; }
 .btn-secondary { background: #333; color: #fff; margin-top: 8px; }
 .btn-danger { background: #cf6679; color: #fff; }
 .btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
+@media (max-width: 480px) {
+  .btn-small { font-size: 12px; padding: 6px 8px; }
+}
 
 .error { color: #cf6679; margin-top: 8px; font-size: 14px; }
 .success { color: #69f0ae; margin-top: 8px; font-size: 14px; }
@@ -919,40 +922,45 @@ function exportPDF() {
     return;
   }
 
+  // Apri una nuova finestra con la tabella e avvia la stampa/PDF
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('Permetti i popup per esportare il PDF');
+    return;
+  }
+
   let html = '<html><head><meta charset="utf-8"><title>Comic-Deck</title>';
-  html += '<style>body{font-family:Arial,sans-serif;padding:20px;} h1{color:#333;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background:#69f0ae;} img{max-width:60px;max-height:90px;}</style>';
+  html += '<style>body{font-family:Arial,sans-serif;padding:20px;} h1{color:#333;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px;} th{background:#69f0ae;} tr:nth-child(even){background:#f9f9f9;} .tag{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;margin:1px;}</style>';
   html += '</head><body>';
   html += '<h1>Comic-Deck - Collezione</h1>';
   html += '<p>Esportato il: ' + new Date().toLocaleDateString('it-IT') + '</p>';
-  html += '<table><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Tag</th></tr>';
+  html += '<table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Tag</th></tr></thead><tbody>';
 
   for (let i = 0; i < allComics.length; i++) {
     const c = allComics[i];
     const tags = [];
-    if (c.firmato) tags.push('Firmato');
-    if (c.coa) tags.push('COA');
-    if (c.remark) tags.push('Sketch');
-    if (c.gradato) tags.push('Gradato ' + (c.voto_gradazione || ''));
+    if (c.firmato) tags.push('<span class="tag" style="background:#ffc107;">Firmato</span>');
+    if (c.coa) tags.push('<span class="tag" style="background:#1565c0;color:#fff;">COA</span>');
+    if (c.remark) tags.push('<span class="tag" style="background:#7b1fa2;color:#fff;">Sketch</span>');
+    if (c.gradato) tags.push('<span class="tag" style="background:#69f0ae;">Gradato ' + (c.voto_gradazione || '') + '</span>');
 
     html += '<tr>';
-    html += '<td>' + (c.titolo || '') + '</td>';
-    html += '<td>' + (c.categoria || 'Comics') + '</td>';
-    html += '<td>' + (c.numero || '') + '</td>';
-    html += '<td>' + (c.anno || '') + '</td>';
-    html += '<td>' + (c.publisher || '') + '</td>';
-    html += '<td>' + (c.disegnatore || '') + '</td>';
-    html += '<td>' + (c.stato || '') + '</td>';
-    html += '<td>' + tags.join(', ') + '</td>';
+    html += '<td><strong>' + escapeHtml(c.titolo || '') + '</strong></td>';
+    html += '<td>' + escapeHtml(c.categoria || 'Comics') + '</td>';
+    html += '<td>' + escapeHtml(c.numero || '') + '</td>';
+    html += '<td>' + escapeHtml(c.anno || '') + '</td>';
+    html += '<td>' + escapeHtml(c.publisher || '') + '</td>';
+    html += '<td>' + escapeHtml(c.disegnatore || '') + '</td>';
+    html += '<td>' + escapeHtml(c.stato || '') + '</td>';
+    html += '<td>' + tags.join(' ') + '</td>';
     html += '</tr>';
   }
 
-  html += '</table></body></html>';
+  html += '</tbody></table></body></html>';
 
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'comic_deck_' + new Date().toISOString().split('T')[0] + '.html';
-  link.click();
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function() { w.print(); }, 500);
 }
 
 function switchTab(tab) {
