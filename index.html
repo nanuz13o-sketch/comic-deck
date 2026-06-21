@@ -295,6 +295,10 @@ select {
     <!-- LIST VIEW -->
     <div id="listView">
       <input type="text" class="search-bar" id="searchInput" placeholder="Cerca per titolo, publisher, numero, anno, disegnatore..." oninput="searchComics()">
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportCSV()">&#128190; CSV</button>
+        <button class="btn btn-secondary btn-small" style="flex:1; margin-top:0;" onclick="exportPDF()">&#128196; PDF</button>
+      </div>
       <div id="comicList" class="comic-list"></div>
     </div>
 
@@ -868,6 +872,87 @@ function toggleGradazione() {
   if (fields) {
     fields.style.display = gradato ? 'block' : 'none';
   }
+}
+
+function exportCSV() {
+  if (allComics.length === 0) {
+    alert('Nessun fumetto da esportare!');
+    return;
+  }
+
+  const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Immagine'];
+  let csv = headers.join(';') + '\n';
+
+  for (let i = 0; i < allComics.length; i++) {
+    const c = allComics[i];
+    const row = [
+      c.titolo || '',
+      c.categoria || 'Comics',
+      c.numero || '',
+      c.anno || '',
+      c.publisher || '',
+      c.disegnatore || '',
+      c.lingua || '',
+      c.variant || '',
+      c.stato || '',
+      c.firmato ? 'Sì' : 'No',
+      c.coa ? 'Sì' : 'No',
+      c.remark ? 'Sì' : 'No',
+      c.gradato ? 'Sì' : 'No',
+      c.voto_gradazione || '',
+      c.ente_gradazione || '',
+      c.immagine_url || ''
+    ];
+    csv += row.join(';') + '\n';
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'comic_deck_' + new Date().toISOString().split('T')[0] + '.csv';
+  link.click();
+}
+
+function exportPDF() {
+  if (allComics.length === 0) {
+    alert('Nessun fumetto da esportare!');
+    return;
+  }
+
+  let html = '<html><head><meta charset="utf-8"><title>Comic-Deck</title>';
+  html += '<style>body{font-family:Arial,sans-serif;padding:20px;} h1{color:#333;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background:#69f0ae;} img{max-width:60px;max-height:90px;}</style>';
+  html += '</head><body>';
+  html += '<h1>Comic-Deck - Collezione</h1>';
+  html += '<p>Esportato il: ' + new Date().toLocaleDateString('it-IT') + '</p>';
+  html += '<table><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Tag</th></tr>';
+
+  for (let i = 0; i < allComics.length; i++) {
+    const c = allComics[i];
+    const tags = [];
+    if (c.firmato) tags.push('Firmato');
+    if (c.coa) tags.push('COA');
+    if (c.remark) tags.push('Sketch');
+    if (c.gradato) tags.push('Gradato ' + (c.voto_gradazione || ''));
+
+    html += '<tr>';
+    html += '<td>' + (c.titolo || '') + '</td>';
+    html += '<td>' + (c.categoria || 'Comics') + '</td>';
+    html += '<td>' + (c.numero || '') + '</td>';
+    html += '<td>' + (c.anno || '') + '</td>';
+    html += '<td>' + (c.publisher || '') + '</td>';
+    html += '<td>' + (c.disegnatore || '') + '</td>';
+    html += '<td>' + (c.stato || '') + '</td>';
+    html += '<td>' + tags.join(', ') + '</td>';
+    html += '</tr>';
+  }
+
+  html += '</table></body></html>';
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'comic_deck_' + new Date().toISOString().split('T')[0] + '.html';
+  link.click();
 }
 
 function switchTab(tab) {
