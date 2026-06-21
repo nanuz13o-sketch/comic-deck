@@ -260,6 +260,41 @@ select {
   color: #666;
   font-style: italic;
 }
+
+.stat-card {
+  background: #2a2a2a;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.stat-card .stat-label {
+  color: #888;
+  font-size: 14px;
+}
+.stat-card .stat-value {
+  color: #69f0ae;
+  font-size: 22px;
+  font-weight: 700;
+}
+.stat-card .stat-value.big {
+  font-size: 32px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.stat-grid .stat-card {
+  flex-direction: column;
+  text-align: center;
+}
+.stat-grid .stat-card .stat-label {
+  margin-bottom: 4px;
+}
 </style>
 <base target="_blank">
 </head>
@@ -293,6 +328,7 @@ select {
     <div class="tabs">
       <div class="tab active" onclick="switchTab('list')" id="tabList">Collezione</div>
       <div class="tab" onclick="switchTab('add')" id="tabAdd">Aggiungi</div>
+      <div class="tab" onclick="switchTab('stats')" id="tabStats">Statistiche</div>
     </div>
 
     <!-- LIST VIEW -->
@@ -373,6 +409,14 @@ select {
         </div>
         <button class="btn btn-primary" id="saveBtn" onclick="saveComic()">Salva in Archivio</button>
         <div id="saveMsg"></div>
+      </div>
+    </div>
+
+    <!-- STATS VIEW -->
+    <div id="statsView" class="hidden">
+      <div class="form-section">
+        <h2>Statistiche Collezione</h2>
+        <div id="statsContent"></div>
       </div>
     </div>
   </div>
@@ -966,10 +1010,77 @@ function exportPDF() {
 function switchTab(tab) {
   document.getElementById('tabList').classList.toggle('active', tab === 'list');
   document.getElementById('tabAdd').classList.toggle('active', tab === 'add');
+  document.getElementById('tabStats').classList.toggle('active', tab === 'stats');
   document.getElementById('listView').classList.toggle('hidden', tab !== 'list');
   document.getElementById('addView').classList.toggle('hidden', tab !== 'add');
+  document.getElementById('statsView').classList.toggle('hidden', tab !== 'stats');
 
   if (tab === 'list') loadComics();
+  if (tab === 'stats') showStats();
+}
+
+function showStats() {
+  const container = document.getElementById('statsContent');
+
+  if (allComics.length === 0) {
+    container.innerHTML = '<div class="empty-state">Nessun dato disponibile. Aggiungi qualche fumetto!</div>';
+    return;
+  }
+
+  const total = allComics.length;
+  const comics = allComics.filter(c => (c.categoria || 'Comics') === 'Comics').length;
+  const manga = allComics.filter(c => c.categoria === 'Manga').length;
+  const libri = allComics.filter(c => c.categoria === 'Libri').length;
+  const italiano = allComics.filter(c => (c.lingua || 'Italiano') === 'Italiano').length;
+  const inglese = allComics.filter(c => c.lingua === 'English').length;
+  const gradati = allComics.filter(c => c.gradato).length;
+  const firmati = allComics.filter(c => c.firmato).length;
+  const coa = allComics.filter(c => c.coa).length;
+  const remark = allComics.filter(c => c.remark).length;
+
+  container.innerHTML = 
+    '<div class="stat-card">' +
+      '<span class="stat-label">Totale Elementi</span>' +
+      '<span class="stat-value big">' + total + '</span>' +
+    '</div>' +
+    '<div class="stat-grid">' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Comics</span>' +
+        '<span class="stat-value">' + comics + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Manga</span>' +
+        '<span class="stat-value">' + manga + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Libri</span>' +
+        '<span class="stat-value">' + libri + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Italiano</span>' +
+        '<span class="stat-value">' + italiano + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">English</span>' +
+        '<span class="stat-value">' + inglese + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Gradati</span>' +
+        '<span class="stat-value">' + gradati + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Firmati</span>' +
+        '<span class="stat-value">' + firmati + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">COA</span>' +
+        '<span class="stat-value">' + coa + '</span>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<span class="stat-label">Sketch</span>' +
+        '<span class="stat-value">' + remark + '</span>' +
+      '</div>' +
+    '</div>';
 }
 
 function escapeHtml(text) {
