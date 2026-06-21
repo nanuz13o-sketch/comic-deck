@@ -258,6 +258,7 @@ select {
   font-style: italic;
 }
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -302,7 +303,7 @@ select {
       <div class="form-section">
         <h2>Aggiungi un nuovo albo</h2>
         <div class="file-input-wrapper">
-          <input type="file" id="coverInput" accept="image/*" onchange="previewImage()">
+          <input type="file" id="coverInput" accept="image/*" capture="camera" onchange="previewImage()">
         </div>
         <img id="imagePreview" class="image-preview">
         <input type="text" id="titolo" placeholder="Titolo Fumetto *">
@@ -733,7 +734,7 @@ function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant
     '<p>Lingua: ' + lingua + '</p>' +
     '<p>Stato: ' + stato + '</p>' +
     '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' + 
-      (firmato ? '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">FIRMONE</span>' : '') +
+      (firmato ? '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">FIRMATO</span>' : '') +
       (coa ? '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">COA</span>' : '') +
       (remark ? '<span style="background:#7b1fa2;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">SKETCH</span>' : '') +
       (gradato ? '<span style="background:#69f0ae;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">GRADATO</span>' : '') +
