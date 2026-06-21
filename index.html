@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comic-Deck</title>
+<!-- Usiamo un CDN alternativo per evitare il tracking prevention -->
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #121212;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+.container { max-width: 500px; margin: 0 auto; padding: 16px; }
+
+.login-box {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 32px;
+  margin-top: 60px;
+  text-align: center;
+}
+.login-box h1 { color: #69f0ae; font-size: 28px; margin-bottom: 8px; }
+.login-box p { color: #888; margin-bottom: 24px; }
+input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 16px;
+}
+input:focus { outline: none; border-color: #69f0ae; }
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.9; }
+.btn-primary { background: #69f0ae; color: #000; }
+.btn-secondary { background: #333; color: #fff; margin-top: 8px; }
+.btn-danger { background: #cf6679; color: #fff; }
+.btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
+
+.error { color: #cf6679; margin-top: 8px; font-size: 14px; }
+.success { color: #69f0ae; margin-top: 8px; font-size: 14px; }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #333;
+  margin-bottom: 16px;
+}
+.header h1 { color: #69f0ae; font-size: 22px; }
+.header .user { color: #888; font-size: 13px; }
+
+.search-bar {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #fff;
+  font-size: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #888;
+}
+.tab.active { background: #69f0ae; color: #000; font-weight: 600; }
+
+.comic-list { display: flex; flex-direction: column; gap: 12px; }
+.comic-card {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  position: relative;
+}
+.comic-thumb {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: #2a2a2a;
+}
+.comic-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #555;
+}
+.comic-info { flex: 1; min-width: 0; }
+.comic-info h3 {
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comic-info p { font-size: 13px; color: #888; margin-bottom: 2px; }
+.comic-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tag {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.tag-signed { background: #ffc107; color: #000; }
+.tag-coa { background: #1565c0; color: #fff; }
+.tag-remark { background: #7b1fa2; color: #fff; }
+.tag-graded { background: #69f0ae; color: #000; }
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #cf6679;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.form-section {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 20px;
+}
+.form-section h2 { color: #69f0ae; margin-bottom: 16px; font-size: 18px; }
+.form-row { display: flex; gap: 12px; }
+.form-row input { flex: 1; }
+
+select {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 16px;
+}
+
+.checkboxes {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.image-preview {
+  width: 100px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: none;
+  background: #2a2a2a;
+}
+
+.file-input-wrapper { margin-bottom: 12px; }
+#gradazioneFields { margin-bottom: 12px; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.modal-content {
+  background: #1e1e1e;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.modal-header h3 { color: #69f0ae; }
+.modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+.modal-img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.modal-meta p { color: #888; margin-bottom: 4px; }
+
+.hidden { display: none !important; }
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h1>Comic-Deck</h1>
+      <p>Il tuo archivio fumetti personale</p>
+      <input type="email" id="emailInput" placeholder="Email" value="">
+      <input type="password" id="passwordInput" placeholder="Password" value="">
+      <button class="btn btn-primary" onclick="handleLogin()">Accedi</button>
+      <button class="btn btn-secondary" onclick="handleSignup()">Registrati</button>
+      <div id="loginMsg"></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="mainScreen" class="hidden">
+    <div class="header">
+      <div>
+        <h1>Comic-Deck</h1>
+        <span class="user" id="userEmail"></span>
+      </div>
+      <button class="btn btn-small btn-secondary" onclick="handleLogout()">Esci</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('list')" id="tabList">Collezione</div>
+      <div class="tab" onclick="switchTab('add')" id="tabAdd">Aggiungi</div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="listView">
+      <input type="text" class="search-bar" id="searchInput" placeholder="Cerca per titolo, publisher, numero, anno, disegnatore..." oninput="searchComics()">
+      <div id="comicList" class="comic-list"></div>
+    </div>
+
+    <!-- ADD VIEW -->
+    <div id="addView" class="hidden">
+      <div class="form-section">
+        <h2>Aggiungi un nuovo albo</h2>
+        <div class="file-input-wrapper">
+          <input type="file" id="coverInput" accept="image/*" onchange="previewImage()">
+        </div>
+        <img id="imagePreview" class="image-preview">
+        <input type="text" id="titolo" placeholder="Titolo Fumetto *">
+        <div class="form-row">
+          <input type="number" id="numero" placeholder="Numero / Issue" min="0">
+          <input type="number" id="anno" placeholder="Anno" min="1900" max="2100">
+        </div>
+        <input type="text" id="publisher" placeholder="Publisher / Casa Editrice">
+        <input type="text" id="disegnatore" placeholder="Disegnatore">
+        <select id="lingua">
+          <option value="Italiano">Italiano</option>
+          <option value="English">English</option>
+          <option value="Altro">Altro</option>
+        </select>
+        <select id="variant">
+          <option value="Standard">Standard</option>
+          <option value="Variant">Variant</option>
+          <option value="Virgin">Virgin</option>
+        </select>
+        <select id="stato">
+          <option value="Non Specificato">Stato del Fumetto</option>
+          <option value="Mint (Perfetto)">Mint (Perfetto)</option>
+          <option value="Near Mint (Quasi Perfetto)">Near Mint (Quasi Perfetto)</option>
+          <option value="Very Fine / Very Good">Very Fine / Very Good</option>
+          <option value="Rovinato / Battle Damaged">Rovinato / Battle Damaged</option>
+        </select>
+        <div class="checkboxes">
+          <label class="checkbox-label"><input type="checkbox" id="firmato"> Firmato</label>
+          <label class="checkbox-label"><input type="checkbox" id="coa"> COA</label>
+          <label class="checkbox-label"><input type="checkbox" id="remark"> Remark</label>
+          <label class="checkbox-label"><input type="checkbox" id="gradato" onchange="toggleGradazione()"> Gradato</label>
+        </div>
+        <div id="gradazioneFields" style="display:none; margin-bottom:12px;">
+          <div class="form-row">
+            <input type="number" id="votoGradazione" placeholder="Voto (es. 9.8)" step="0.1" min="0" max="10" style="flex:1">
+            <select id="enteGradazione" style="flex:2; margin-bottom:0;">
+              <option value="">Ente di gradazione</option>
+              <option value="CGC">CGC</option>
+              <option value="GRAAD">GRAAD</option>
+              <option value="EGS">EGS</option>
+              <option value="Cread">Cread</option>
+              <option value="CBCS">CBCS</option>
+              <option value="PGx">PGx</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveComic()">Salva in Archivio</button>
+        <div id="saveMsg"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Anteprima Copertina</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <img id="modalImg" class="modal-img" src="" alt="Copertina">
+    <div id="modalMeta" class="modal-meta"></div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const SUPABASE_URL = 'https://altubrcwczbxqpwdjiav.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qWfV1_-RfhOk8efDgqiYkQ_MLiAgYvy';
+
+// ==================== INIT ====================
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+let allComics = [];
+let editingId = null;
+
+// ==================== AUTH ====================
+async function handleLogin() {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const msg = document.getElementById('loginMsg');
+
+  if (!email || !password) {
+    msg.innerHTML = '<span class="error">Inserisci email e password</span>';
+    return;
+  }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    msg.innerHTML = '<span class="error">' + error.message + '</span>';
+  } else {
+    currentUser = data.user;
+    showMainScreen();
+  }
+}
+
+async function handleSignup() {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const msg = document.getElementById('loginMsg');
+
+  if (!email || !password) {
+    msg.innerHTML = '<span class="error">Inserisci email e password</span>';
+    return;
+  }
+  if (password.length < 6) {
+    msg.innerHTML = '<span class="error">Password minimo 6 caratteri</span>';
+    return;
+  }
+
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) {
+    msg.innerHTML = '<span class="error">' + error.message + '</span>';
+  } else {
+    msg.innerHTML = '<span class="success">Registrato! Ora accedi.</span>';
+  }
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainScreen').classList.add('hidden');
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    showMainScreen();
+  }
+}
+
+function showMainScreen() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainScreen').classList.remove('hidden');
+  document.getElementById('userEmail').textContent = currentUser.email;
+  loadComics();
+}
+
+// ==================== COMICS ====================
+async function loadComics() {
+  const { data, error } = await sb
+    .from('fumetti')
+    .select('*', { head: false })
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error loading comics:', error);
+    document.getElementById('comicList').innerHTML = '<div class="empty-state">Errore caricamento: ' + error.message + '</div>';
+    return;
+  }
+
+  console.log('Loaded comics count:', data ? data.length : 0, 'First item:', data && data[0] ? data[0].titolo : 'none');
+  allComics = data || [];
+  renderComics(allComics);
+}
+
+function renderComics(comics) {
+  const list = document.getElementById('comicList');
+  list.innerHTML = '';
+
+  if (comics.length === 0) {
+    list.innerHTML = '<div class="empty-state">Nessun fumetto in archivio. Inizia ad aggiungerne uno!</div>';
+    return;
+  }
+
+  for (let i = 0; i < comics.length; i++) {
+    const c = comics[i];
+    const card = document.createElement('div');
+    card.className = 'comic-card';
+
+    const tags = [];
+    if (c.firmato) tags.push('<span class="tag tag-signed">Firmato</span>');
+    if (c.coa) tags.push('<span class="tag tag-coa">COA</span>');
+    if (c.remark) tags.push('<span class="tag tag-remark">Sketch</span>');
+    if (c.gradato) tags.push('<span class="tag tag-graded">Gradato</span>');
+
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'delete-btn';
+    editBtn.style.right = '40px';
+    editBtn.innerHTML = '&#9998;';
+    editBtn.onclick = function() { editComic(c); };
+    card.appendChild(editBtn);
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-btn';
+    delBtn.innerHTML = '&#128465;';
+    delBtn.onclick = function() { deleteComic(c.id, c.titolo); };
+    card.appendChild(delBtn);
+
+    // Image
+    if (c.immagine_url) {
+      const img = document.createElement('img');
+      img.src = c.immagine_url;
+      img.className = 'comic-thumb';
+      img.onclick = function() {
+        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato);
+      };
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'comic-thumb placeholder';
+      placeholder.innerHTML = '&#128214;';
+      card.appendChild(placeholder);
+    }
+
+    // Info
+    const info = document.createElement('div');
+    info.className = 'comic-info';
+    info.innerHTML = 
+      '<h3>' + escapeHtml(c.titolo || 'Titolo sconosciuto') + '</h3>' +
+      '<p>Issue: ' + escapeHtml(c.numero || '-') + ' Year: ' + escapeHtml(c.anno || '-') + '</p>' +
+      '<p>Publisher: ' + escapeHtml(c.publisher || '-') + '</p>' +
+      '<p>Disegnatore: ' + escapeHtml(c.disegnatore || '-') + '</p>' +
+      '<p>Tipo: ' + escapeHtml(c.variant) + ' ' + escapeHtml(c.lingua) + '</p>' +
+      '<p>Stato: ' + escapeHtml(c.stato) + '</p>' +
+      (c.gradato && c.voto_gradazione ? '<p>Gradato: ' + escapeHtml(c.voto_gradazione) + ' (' + escapeHtml(c.ente_gradazione) + ')</p>' : '') +
+      '<div class="comic-tags">' + tags.join('') + '</div>';
+    card.appendChild(info);
+
+    list.appendChild(card);
+  }
+}
+
+function searchComics() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (!query) {
+    renderComics(allComics);
+    return;
+  }
+
+  const filtered = allComics.filter(c => 
+    (c.titolo || '').toLowerCase().includes(query) ||
+    (c.publisher || '').toLowerCase().includes(query) ||
+    (c.numero || '').toLowerCase().includes(query) ||
+    (c.anno || '').toLowerCase().includes(query) ||
+    (c.disegnatore || '').toLowerCase().includes(query)
+  );
+  renderComics(filtered);
+}
+
+async function deleteComic(id, titolo) {
+  if (!confirm('Sei sicuro di voler eliminare "' + titolo + '" dall\'archivio?\nL\'immagine verrà cancellata permanentemente.')) {
+    return;
+  }
+
+  const comic = allComics.find(c => c.id === id);
+
+  const { error: dbError } = await sb
+    .from('fumetti')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', currentUser.id);
+
+  if (dbError) {
+    alert('Errore nell\'eliminazione: ' + dbError.message);
+    return;
+  }
+
+  if (comic && comic.immagine_url) {
+    const path = comic.immagine_url.split('/').pop();
+    await sb.storage.from('copertine').remove([path]);
+  }
+
+  loadComics();
+}
+
+// ==================== ADD COMIC ====================
+function previewImage() {
+  const input = document.getElementById('coverInput');
+  const preview = document.getElementById('imagePreview');
+
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function saveComic() {
+  const isEditing = editingId !== null;
+  const titolo = document.getElementById('titolo').value.trim();
+  const numero = document.getElementById('numero').value.trim();
+  const anno = document.getElementById('anno').value.trim();
+  const publisher = document.getElementById('publisher').value.trim();
+  const disegnatore = document.getElementById('disegnatore').value.trim();
+  const lingua = document.getElementById('lingua').value;
+  const variant = document.getElementById('variant').value;
+  const stato = document.getElementById('stato').value || 'Non Specificato';
+  const firmato = document.getElementById('firmato').checked;
+  const coa = document.getElementById('coa').checked;
+  const remark = document.getElementById('remark').checked;
+  const gradato = document.getElementById('gradato').checked;
+  const votoGradazione = gradato ? (document.getElementById('votoGradazione').value.trim() || '') : '';
+  const enteGradazione = gradato ? (document.getElementById('enteGradazione').value || '') : '';
+  const fileInput = document.getElementById('coverInput');
+  const msg = document.getElementById('saveMsg');
+
+  if (!titolo) {
+    msg.innerHTML = '<span class="error">Inserisci almeno il titolo!</span>';
+    return;
+  }
+
+  let imageUrl = '';
+
+  if (fileInput.files && fileInput.files[0]) {
+    const file = fileInput.files[0];
+    const ext = file.name.split('.').pop();
+    const fileName = Date.now() + '_' + Math.random().toString(36).substr(2, 9) + '.' + ext;
+
+    const { data: uploadData, error: uploadError } = await sb.storage
+      .from('copertine')
+      .upload(fileName, file, { contentType: file.type });
+
+    if (uploadError) {
+      msg.innerHTML = '<span class="error">Errore upload immagine: ' + uploadError.message + '</span>';
+      return;
+    }
+
+    const { data: urlData } = sb.storage.from('copertine').getPublicUrl(fileName);
+    imageUrl = urlData.publicUrl;
+  }
+
+  let dbError;
+
+  if (isEditing) {
+    const updateData = {
+      titolo: titolo,
+      numero: numero,
+      anno: anno,
+      publisher: publisher,
+      disegnatore: disegnatore,
+      lingua: lingua,
+      variant: variant,
+      stato: stato,
+      firmato: firmato,
+      coa: coa,
+      remark: remark,
+      gradato: gradato,
+      voto_gradazione: votoGradazione,
+      ente_gradazione: enteGradazione
+    };
+    if (imageUrl) updateData.immagine_url = imageUrl;
+
+    const result = await sb.from('fumetti')
+      .update(updateData)
+      .eq('id', editingId)
+      .eq('user_id', currentUser.id);
+    dbError = result.error;
+  } else {
+    const result = await sb.from('fumetti').insert({
+      user_id: currentUser.id,
+      titolo: titolo,
+      numero: numero,
+      anno: anno,
+      publisher: publisher,
+      disegnatore: disegnatore,
+      lingua: lingua,
+      variant: variant,
+      stato: stato,
+      firmato: firmato,
+      coa: coa,
+      remark: remark,
+      gradato: gradato,
+      voto_gradazione: votoGradazione,
+      ente_gradazione: enteGradazione,
+      immagine_url: imageUrl
+    });
+    dbError = result.error;
+  }
+
+  if (dbError) {
+    console.error('DB Error:', dbError);
+    msg.innerHTML = '<span class="error">Errore salvataggio: ' + dbError.message + '</span>';
+    return;
+  }
+  console.log('Update success, editingId:', editingId, 'isEditing:', isEditing);
+
+  document.getElementById('titolo').value = '';
+  document.getElementById('numero').value = '';
+  document.getElementById('anno').value = '';
+  document.getElementById('publisher').value = '';
+  document.getElementById('disegnatore').value = '';
+  document.getElementById('lingua').value = 'Italiano';
+  document.getElementById('variant').value = 'Standard';
+  document.getElementById('stato').value = 'Non Specificato';
+  document.getElementById('firmato').checked = false;
+  document.getElementById('coa').checked = false;
+  document.getElementById('remark').checked = false;
+  document.getElementById('gradato').checked = false;
+  document.getElementById('votoGradazione').value = '';
+  document.getElementById('enteGradazione').value = '';
+  document.getElementById('gradazioneFields').style.display = 'none';
+  document.getElementById('coverInput').value = '';
+  editingId = null;
+  document.getElementById('saveBtn').textContent = 'Salva in Archivio';
+  document.getElementById('imagePreview').style.display = 'none';
+
+  msg.innerHTML = '<span class="success">' + (isEditing ? 'Aggiornato' : 'Salvato') + ' con successo!</span>';
+  setTimeout(function() { msg.innerHTML = ''; }, 3000);
+
+  setTimeout(function() {
+    switchTab('list');
+    // Forza refresh svuotando la cache locale
+    allComics = [];
+    loadComics();
+  }, 800);
+}
+
+// ==================== MODAL ====================
+function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato) {
+  document.getElementById('modalImg').src = imgUrl;
+  document.getElementById('modalMeta').innerHTML = 
+    '<p><strong style="color:#fff;font-size:18px;">' + titolo + '</strong></p>' +
+    '<p>Issue: ' + (numero || '-') + '</p>' +
+    '<p>Anno: ' + (anno || '-') + '</p>' +
+    '<p>Publisher: ' + (publisher || '-') + '</p>' +
+    '<p>Disegnatore: ' + (disegnatore || '-') + '</p>' +
+    '<p>Tipo: ' + variant + '</p>' +
+    '<p>Lingua: ' + lingua + '</p>' +
+    '<p>Stato: ' + stato + '</p>' +
+    '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' + 
+      (firmato ? '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">FIRMONE</span>' : '') +
+      (coa ? '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">COA</span>' : '') +
+      (remark ? '<span style="background:#7b1fa2;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">SKETCH</span>' : '') +
+      (gradato ? '<span style="background:#69f0ae;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700;">GRADATO</span>' : '') +
+    '</div>';
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'modalOverlay') {
+    document.getElementById('modalOverlay').classList.add('hidden');
+  }
+}
+
+// ==================== UTILS ====================
+function editComic(c) {
+  editingId = c.id;
+
+  // Precompila il form
+  document.getElementById('titolo').value = c.titolo || '';
+  document.getElementById('numero').value = c.numero || '';
+  document.getElementById('anno').value = c.anno || '';
+  document.getElementById('publisher').value = c.publisher || '';
+  document.getElementById('disegnatore').value = c.disegnatore || '';
+  document.getElementById('lingua').value = c.lingua || 'Italiano';
+  document.getElementById('variant').value = c.variant || 'Standard';
+  document.getElementById('stato').value = c.stato || 'Non Specificato';
+  document.getElementById('firmato').checked = c.firmato || false;
+  document.getElementById('coa').checked = c.coa || false;
+  document.getElementById('remark').checked = c.remark || false;
+  document.getElementById('gradato').checked = c.gradato || false;
+
+  toggleGradazione();
+
+  if (c.gradato) {
+    document.getElementById('votoGradazione').value = c.voto_gradazione || '';
+    document.getElementById('enteGradazione').value = c.ente_gradazione || '';
+  }
+
+  // Cambia testo pulsante
+  document.getElementById('saveBtn').textContent = 'Aggiorna Fumetto';
+
+  switchTab('add');
+}
+
+function toggleGradazione() {
+  const gradato = document.getElementById('gradato').checked;
+  const fields = document.getElementById('gradazioneFields');
+  if (fields) {
+    fields.style.display = gradato ? 'block' : 'none';
+  }
+}
+
+function editComic(c) {
+  editingId = c.id;
+
+  // Precompila il form
+  document.getElementById('titolo').value = c.titolo || '';
+  document.getElementById('numero').value = c.numero || '';
+  document.getElementById('anno').value = c.anno || '';
+  document.getElementById('publisher').value = c.publisher || '';
+  document.getElementById('disegnatore').value = c.disegnatore || '';
+  document.getElementById('lingua').value = c.lingua || 'Italiano';
+  document.getElementById('variant').value = c.variant || 'Standard';
+  document.getElementById('stato').value = c.stato || 'Non Specificato';
+  document.getElementById('firmato').checked = c.firmato || false;
+  document.getElementById('coa').checked = c.coa || false;
+  document.getElementById('remark').checked = c.remark || false;
+  document.getElementById('gradato').checked = c.gradato || false;
+
+  toggleGradazione();
+
+  if (c.gradato) {
+    document.getElementById('votoGradazione').value = c.voto_gradazione || '';
+    document.getElementById('enteGradazione').value = c.ente_gradazione || '';
+  }
+
+  // Cambia testo pulsante
+  document.getElementById('saveBtn').textContent = 'Aggiorna Fumetto';
+
+  switchTab('add');
+}
+
+function toggleGradazione() {
+  const gradato = document.getElementById('gradato').checked;
+  const fields = document.getElementById('gradazioneFields');
+  if (fields) {
+    fields.style.display = gradato ? 'block' : 'none';
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById('tabList').classList.toggle('active', tab === 'list');
+  document.getElementById('tabAdd').classList.toggle('active', tab === 'add');
+  document.getElementById('listView').classList.toggle('hidden', tab !== 'list');
+  document.getElementById('addView').classList.toggle('hidden', tab !== 'add');
+
+  if (tab === 'list') loadComics();
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== INIT ====================
+checkSession();
+</script>
+</body>
+</html>
