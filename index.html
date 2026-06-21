@@ -411,6 +411,7 @@ select {
           <label class="checkbox-label"><input type="checkbox" id="remark"> Remark</label>
           <label class="checkbox-label"><input type="checkbox" id="gradato" onchange="toggleGradazione()"> Gradato</label>
         </div>
+        <textarea id="note" placeholder="Note..." rows="3" style="width:100%; padding:12px; border:1px solid #333; border-radius:8px; background:#2a2a2a; color:#fff; font-size:16px; resize:vertical; margin-bottom:12px;"></textarea>
         <div id="gradazioneFields" style="display:none; margin-bottom:12px;">
           <div class="form-row">
             <input type="number" id="votoGradazione" placeholder="Voto (es. 9.8)" step="0.1" min="0" max="10" style="flex:1">
@@ -591,7 +592,7 @@ function renderComics(comics) {
       img.src = c.immagine_url;
       img.className = 'comic-thumb';
       img.onclick = function() {
-        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria);
+        openModal(c.immagine_url, c.titolo, c.numero, c.anno, c.publisher, c.disegnatore, c.variant, c.lingua, c.stato, c.firmato, c.coa, c.remark, c.gradato, c.categoria, c.note);
       };
       card.appendChild(img);
     } else {
@@ -613,6 +614,7 @@ function renderComics(comics) {
       '<p>Tipo: ' + escapeHtml(c.variant) + ' ' + escapeHtml(c.lingua) + '</p>' +
       '<p>Stato: ' + escapeHtml(c.stato) + '</p>' +
       (c.gradato && c.voto_gradazione ? '<p>Gradato: ' + escapeHtml(c.voto_gradazione) + ' (' + escapeHtml(c.ente_gradazione) + ')</p>' : '') +
+      (c.note ? '<p style="color:#69f0ae; font-style:italic;">&#9998; ' + escapeHtml(c.note.substring(0, 50)) + (c.note.length > 50 ? '...' : '') + '</p>' : '') +
       '<div class="comic-tags">' + tags.join('') + '</div>';
     card.appendChild(info);
 
@@ -838,7 +840,7 @@ async function saveComic() {
       gradato: gradato,
       voto_gradazione: votoGradazione,
       ente_gradazione: enteGradazione,
-      immagine_url: imageUrl
+      note: note
     });
     dbError = result.error;
   }
@@ -865,6 +867,7 @@ async function saveComic() {
   document.getElementById('gradato').checked = false;
   document.getElementById('votoGradazione').value = '';
   document.getElementById('enteGradazione').value = '';
+  document.getElementById('note').value = '';
   document.getElementById('gradazioneFields').style.display = 'none';
   document.getElementById('coverInputCamera').value = '';
   document.getElementById('coverInputGallery').value = '';
@@ -885,7 +888,7 @@ async function saveComic() {
 }
 
 // ==================== MODAL ====================
-function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria) {
+function openModal(imgUrl, titolo, numero, anno, publisher, disegnatore, variant, lingua, stato, firmato, coa, remark, gradato, categoria, note) {
   document.getElementById('modalImg').src = imgUrl;
   document.getElementById('modalMeta').innerHTML = 
     '<p><strong style="color:#fff;font-size:18px;">' + titolo + '</strong></p>' +
@@ -930,6 +933,7 @@ function editComic(c) {
   document.getElementById('coa').checked = c.coa || false;
   document.getElementById('remark').checked = c.remark || false;
   document.getElementById('gradato').checked = c.gradato || false;
+  document.getElementById('note').value = c.note || '';
 
   toggleGradazione();
 
@@ -986,6 +990,7 @@ function editComic(c) {
   document.getElementById('coa').checked = c.coa || false;
   document.getElementById('remark').checked = c.remark || false;
   document.getElementById('gradato').checked = c.gradato || false;
+  document.getElementById('note').value = c.note || '';
 
   toggleGradazione();
 
