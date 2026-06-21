@@ -67,6 +67,21 @@ textarea{resize:vertical;min-height:80px}
 .file-btn{cursor:pointer;width:56px;height:56px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:24px;color:#69f0ae;border:2px solid #69f0ae;position:relative}
 .file-btn input{position:absolute;opacity:0;width:0;height:0}
 
+/* GALLERY */
+.gallery-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0;margin:8px 0;scrollbar-width:thin;scrollbar-color:#333 #1e1e1e}
+.gallery-strip::-webkit-scrollbar{height:4px}
+.gallery-strip::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.gallery-thumb{width:70px;height:100px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;background:#2a2a2a;border:2px solid transparent;transition:border-color .2s}
+.gallery-thumb:hover{border-color:#69f0ae}
+.gallery-thumb.active{border-color:#69f0ae}
+.gallery-count{font-size:11px;color:#888;text-align:center;margin-top:2px}
+
+/* MODAL GALLERY */
+.modal-gallery{display:flex;gap:8px;overflow-x:auto;padding:8px 0;margin-top:12px;scrollbar-width:thin}
+.modal-gallery::-webkit-scrollbar{height:4px}
+.modal-gallery-thumb{width:60px;height:85px;object-fit:cover;border-radius:6px;cursor:pointer;flex-shrink:0;border:2px solid transparent;opacity:.7;transition:all .2s}
+.modal-gallery-thumb:hover,.modal-gallery-thumb.active{opacity:1;border-color:#69f0ae}
+
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px}
 .modal-content{background:#1e1e1e;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:20px}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -92,6 +107,11 @@ textarea{resize:vertical;min-height:80px}
 
 .filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .filters select{flex:1;min-width:100px;margin-bottom:0}
+
+/* MULTI UPLOAD */
+.uploaded-images{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.uploaded-thumb{width:70px;height:100px;object-fit:cover;border-radius:8px;position:relative;background:#2a2a2a}
+.uploaded-thumb .remove-img{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#cf6679;color:#fff;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 </style>
 <base target="_blank">
 <base target="_blank">
@@ -142,9 +162,10 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-section" oninput="markDirty()" onchange="markDirty()">
         <h2 id="formTitle">Aggiungi un nuovo albo</h2>
         <div class="file-btns">
-          <label class="file-btn" title="Scatta Foto">&#128247;<input type="file" id="coverInputCamera" accept="image/*" capture="environment" onchange="previewImage(this)"></label>
-          <label class="file-btn" title="Galleria">&#128444;<input type="file" id="coverInputGallery" accept="image/*" onchange="previewImage(this)"></label>
+          <label class="file-btn" title="Scatta Foto">&#128247;<input type="file" id="coverInputCamera" accept="image/*" capture="environment" onchange="handleImageSelect(this)"></label>
+          <label class="file-btn" title="Galleria">&#128444;<input type="file" id="coverInputGallery" accept="image/*" multiple onchange="handleImageSelect(this)"></label>
         </div>
+        <div id="uploadedImages" class="uploaded-images"></div>
         <img id="imagePreview" class="image-preview">
         <input type="text" id="titolo" placeholder="Titolo *">
         <select id="categoria"><option>Comics</option><option>Manga</option><option>Libri</option></select>
@@ -195,8 +216,9 @@ textarea{resize:vertical;min-height:80px}
 
 <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
-    <div class="modal-header"><h3>Anteprima Copertina</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
-    <img id="modalImg" class="modal-img" src="" alt="Copertina">
+    <div class="modal-header"><h3 id="modalTitle">Anteprima</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <img id="modalImg" class="modal-img" src="" alt="Foto">
+    <div id="modalGallery" class="modal-gallery"></div>
     <div id="modalMeta" class="modal-meta"></div>
   </div>
 </div>
@@ -207,6 +229,9 @@ const SUPABASE_KEY = 'sb_publishable_qWfV1_-RfhOk8efDgqiYkQ_MLiAgYvy';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null, allComics = [], editingId = null, formDirty = false;
+let pendingImages = []; // array di {file, previewUrl}
+let currentModalImages = []; // array di URL per il modal gallery
+let currentModalIndex = 0;
 
 const qs = (s) => document.querySelector(s);
 const qsa = (s) => document.querySelectorAll(s);
@@ -251,7 +276,7 @@ function showMainScreen() {
 // ==================== COMICS ====================
 async function loadComics() {
   const { data, error } = await sb.from('fumetti')
-    .select('id,titolo,numero,anno,publisher,disegnatore,lingua,variant,stato,firmato,coa,remark,gradato,voto_gradazione,ente_gradazione,immagine_url,categoria,note,user_id,created_at')
+    .select('id,titolo,numero,anno,publisher,disegnatore,lingua,variant,stato,firmato,coa,remark,gradato,voto_gradazione,ente_gradazione,immagine_url,immagini_extra,categoria,note,user_id,created_at')
     .eq('user_id', currentUser.id).order('created_at', { ascending: false });
   if (error) return qs('#comicList').innerHTML = `<div class="empty-state">Errore: ${error.message}</div>`;
   allComics = data || [];
@@ -264,6 +289,18 @@ function renderComics(comics) {
   if (!comics.length) return list.innerHTML = '<div class="empty-state">Nessun fumetto in archivio. Inizia ad aggiungerne uno!</div>';
   list.innerHTML = '';
   comics.forEach(c => list.appendChild(buildCard(c)));
+}
+
+function getAllImages(c) {
+  const images = [];
+  if (c.immagine_url) images.push(c.immagine_url);
+  if (c.immagini_extra) {
+    try {
+      const extra = typeof c.immagini_extra === 'string' ? JSON.parse(c.immagini_extra) : c.immagini_extra;
+      if (Array.isArray(extra)) extra.forEach(url => { if (url) images.push(url); });
+    } catch(e) {}
+  }
+  return images;
 }
 
 function buildCard(c) {
@@ -285,9 +322,12 @@ function buildCard(c) {
   delBtn.onclick = () => deleteComic(c.id, c.titolo);
   card.appendChild(delBtn);
 
-  if (c.immagine_url) {
+  const images = getAllImages(c);
+  const mainImg = images[0] || null;
+
+  if (mainImg) {
     const img = document.createElement('img');
-    img.src = c.immagine_url; img.className = 'comic-thumb';
+    img.src = mainImg; img.className = 'comic-thumb';
     img.onclick = () => openModal(c);
     card.appendChild(img);
   } else {
@@ -311,6 +351,24 @@ function buildCard(c) {
     ${c.note ? `<p style="color:#69f0ae;font-style:italic">&#9998; ${notePreview}</p>` : ''}
     <div class="comic-tags">${tags.map(t => `<span class="tag tag-${t}">${t==='signed'?'Firmato':t==='coa'?'COA':t==='remark'?'Sketch':'Gradato'}</span>`).join('')}</div>
   `;
+
+  // Gallery strip sotto le info se ci sono più immagini
+  if (images.length > 1) {
+    const strip = document.createElement('div');
+    strip.className = 'gallery-strip';
+    images.forEach((url, i) => {
+      const thumb = document.createElement('img');
+      thumb.src = url; thumb.className = 'gallery-thumb';
+      thumb.onclick = (e) => { e.stopPropagation(); openModal(c, i); };
+      strip.appendChild(thumb);
+    });
+    const count = document.createElement('div');
+    count.className = 'gallery-count';
+    count.textContent = `${images.length} foto`;
+    info.appendChild(strip);
+    info.appendChild(count);
+  }
+
   card.appendChild(info);
   return card;
 }
@@ -337,23 +395,75 @@ function populateAnnoFilter() {
 }
 
 async function deleteComic(id, titolo) {
-  if (!confirm(`Eliminare "${titolo}"? L'immagine verrà cancellata.`)) return;
+  if (!confirm(`Eliminare "${titolo}"? Le immagini verranno cancellate.`)) return;
   const comic = allComics.find(c => c.id === id);
   const { error } = await sb.from('fumetti').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) return alert('Errore: ' + error.message);
-  if (comic?.immagine_url) await sb.storage.from('copertine').remove([comic.immagine_url.split('/').pop()]);
+
+  // Cancella tutte le immagini
+  const images = getAllImages(comic);
+  for (const url of images) {
+    if (url) await sb.storage.from('copertine').remove([url.split('/').pop()]);
+  }
   loadComics();
 }
 
-// ==================== FORM ====================
-function previewImage(input) {
-  const preview = qs('#imagePreview');
-  if (!input.files?.[0]) return;
-  const reader = new FileReader();
-  reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-  reader.readAsDataURL(input.files[0]);
+// ==================== MULTI IMAGE UPLOAD ====================
+function handleImageSelect(input) {
+  if (!input.files?.length) return;
+
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      pendingImages.push({ file, previewUrl: e.target.result });
+      renderPendingImages();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  input.value = '';
 }
 
+function renderPendingImages() {
+  const container = qs('#uploadedImages');
+  container.innerHTML = '';
+  pendingImages.forEach((img, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'uploaded-thumb';
+    wrap.innerHTML = `<img src="${img.previewUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button class="remove-img" onclick="removePendingImage(${i})">&#10005;</button>`;
+    container.appendChild(wrap);
+  });
+
+  // Mostra preview della prima
+  if (pendingImages.length > 0) {
+    const preview = qs('#imagePreview');
+    preview.src = pendingImages[0].previewUrl;
+    preview.style.display = 'block';
+  }
+}
+
+function removePendingImage(index) {
+  pendingImages.splice(index, 1);
+  renderPendingImages();
+  if (pendingImages.length === 0) {
+    qs('#imagePreview').style.display = 'none';
+  }
+}
+
+async function uploadImages() {
+  const uploadedUrls = [];
+  for (const img of pendingImages) {
+    const file = img.file;
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,11)}.${file.name.split('.').pop()}`;
+    const { error: upErr } = await sb.storage.from('copertine').upload(fileName, file, { contentType: file.type });
+    if (upErr) throw new Error('Upload fallito: ' + upErr.message);
+    const url = sb.storage.from('copertine').getPublicUrl(fileName).data.publicUrl;
+    uploadedUrls.push(url);
+  }
+  return uploadedUrls;
+}
+
+// ==================== FORM ====================
 function getComicData() {
   const gradato = qs('#gradato').checked;
   return {
@@ -382,29 +492,46 @@ async function saveComic() {
   const msg = qs('#saveMsg');
   if (!data.titolo) return msg.innerHTML = '<span class="error">Inserisci almeno il titolo!</span>';
 
-  const fileInput = (qs('#coverInputCamera').files?.[0]) ? qs('#coverInputCamera') : qs('#coverInputGallery');
-  let imageUrl = '';
+  let mainImageUrl = '';
+  let extraImages = [];
 
-  if (fileInput.files?.[0]) {
-    const file = fileInput.files[0];
-    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,11)}.${file.name.split('.').pop()}`;
-    const { error: upErr } = await sb.storage.from('copertine').upload(fileName, file, { contentType: file.type });
-    if (upErr) return msg.innerHTML = `<span class="error">Errore upload: ${upErr.message}</span>`;
-    imageUrl = sb.storage.from('copertine').getPublicUrl(fileName).data.publicUrl;
-    fileInput.value = '';
+  // Upload nuove immagini
+  if (pendingImages.length > 0) {
+    try {
+      const urls = await uploadImages();
+      mainImageUrl = urls[0] || '';
+      extraImages = urls.slice(1);
+    } catch (err) {
+      return msg.innerHTML = `<span class="error">${err.message}</span>`;
+    }
   }
 
   let result;
   if (isEditing) {
     const upd = { ...data };
-    if (imageUrl) upd.immagine_url = imageUrl;
+    if (mainImageUrl) upd.immagine_url = mainImageUrl;
+    if (extraImages.length > 0) {
+      // Merge con immagini esistenti
+      const existing = allComics.find(c => c.id === editingId);
+      let existingExtra = [];
+      if (existing?.immagini_extra) {
+        try { existingExtra = JSON.parse(existing.immagini_extra) || []; } catch(e) {}
+      }
+      upd.immagini_extra = JSON.stringify([...existingExtra, ...extraImages]);
+    }
     result = await sb.from('fumetti').update(upd).eq('id', editingId).eq('user_id', currentUser.id);
   } else {
-    result = await sb.from('fumetti').insert({ ...data, user_id: currentUser.id, immagine_url: imageUrl });
+    result = await sb.from('fumetti').insert({
+      ...data,
+      user_id: currentUser.id,
+      immagine_url: mainImageUrl,
+      immagini_extra: extraImages.length > 0 ? JSON.stringify(extraImages) : null
+    });
   }
 
   if (result.error) return msg.innerHTML = `<span class="error">Errore: ${result.error.message}</span>`;
 
+  pendingImages = [];
   resetForm();
   msg.innerHTML = `<span class="success">${isEditing ? 'Aggiornato' : 'Salvato'} con successo!</span>`;
   resetFormDirty();
@@ -418,6 +545,8 @@ function resetForm() {
   qs('#enteGradazione').value = ''; qs('#gradazioneFields').classList.add('hidden');
   qs('#coverInputCamera').value = ''; qs('#coverInputGallery').value = '';
   qs('#imagePreview').style.display = 'none';
+  qs('#uploadedImages').innerHTML = '';
+  pendingImages = [];
   editingId = null;
   qs('#saveBtn').textContent = 'Salva in Archivio';
   qs('#formTitle').textContent = 'Aggiungi un nuovo albo';
@@ -427,9 +556,18 @@ function toggleGradazione() {
   qs('#gradazioneFields').classList.toggle('hidden', !qs('#gradato').checked);
 }
 
-// ==================== MODAL ====================
-function openModal(c) {
-  qs('#modalImg').src = c.immagine_url;
+// ==================== MODAL GALLERY ====================
+function openModal(c, startIndex = 0) {
+  const images = getAllImages(c);
+  if (!images.length) return;
+
+  currentModalImages = images;
+  currentModalIndex = startIndex;
+
+  qs('#modalTitle').textContent = c.titolo || 'Anteprima';
+  updateModalImage();
+
+  // Meta
   const tags = [
     c.firmato && '<span style="background:#ffc107;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">FIRMATO</span>',
     c.coa && '<span style="background:#1565c0;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">COA</span>',
@@ -440,18 +578,44 @@ function openModal(c) {
   qs('#modalMeta').innerHTML = `
     <p><strong style="color:#fff;font-size:18px">${esc(c.titolo)}</strong></p>
     <p><strong style="color:#69f0ae">${esc(c.categoria || 'Comics')}</strong></p>
-    <p>Issue: ${esc(c.numero || '-')}</p><p>Anno: ${esc(c.anno || '-')}</p>
-    <p>Publisher: ${esc(c.publisher || '-')}</p><p>Disegnatore: ${esc(c.disegnatore || '-')}</p>
-    <p>Tipo: ${esc(c.variant || '-')}</p><p>Lingua: ${esc(c.lingua || '-')}</p><p>Stato: ${esc(c.stato || '-')}</p>
+    <p>Issue: ${esc(c.numero || '-')} | Anno: ${esc(c.anno || '-')}</p>
+    <p>Publisher: ${esc(c.publisher || '-')} | Disegnatore: ${esc(c.disegnatore || '-')}</p>
+    <p>Tipo: ${esc(c.variant || '-')} | Lingua: ${esc(c.lingua || '-')} | Stato: ${esc(c.stato || '-')}</p>
     ${c.gradato && c.voto_gradazione ? `<p>Gradato: ${esc(c.voto_gradazione)} (${esc(c.ente_gradazione)})</p>` : ''}
     ${c.note ? `<p style="color:#69f0ae;margin-top:8px;font-style:italic">&#9998; ${esc(c.note)}</p>` : ''}
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${tags.join('')}</div>
   `;
+
   qs('#modalOverlay').classList.remove('hidden');
 }
 
+function updateModalImage() {
+  if (!currentModalImages.length) return;
+  qs('#modalImg').src = currentModalImages[currentModalIndex];
+
+  // Gallery thumbnails
+  const gallery = qs('#modalGallery');
+  gallery.innerHTML = '';
+  if (currentModalImages.length > 1) {
+    currentModalImages.forEach((url, i) => {
+      const thumb = document.createElement('img');
+      thumb.src = url;
+      thumb.className = 'modal-gallery-thumb' + (i === currentModalIndex ? ' active' : '');
+      thumb.onclick = () => { currentModalIndex = i; updateModalImage(); };
+      gallery.appendChild(thumb);
+    });
+    gallery.classList.remove('hidden');
+  } else {
+    gallery.classList.add('hidden');
+  }
+}
+
 function closeModal(e) {
-  if (!e || e.target.id === 'modalOverlay') qs('#modalOverlay').classList.add('hidden');
+  if (!e || e.target.id === 'modalOverlay') {
+    qs('#modalOverlay').classList.add('hidden');
+    currentModalImages = [];
+    currentModalIndex = 0;
+  }
 }
 
 // ==================== EDIT ====================
@@ -463,7 +627,26 @@ function editComic(c) {
   ['firmato','coa','remark','gradato'].forEach(k => qs('#'+k).checked = c[k] || false);
   toggleGradazione();
   if (c.gradato) { qs('#votoGradazione').value = c.voto_gradazione || ''; qs('#enteGradazione').value = c.ente_gradazione || ''; }
-  if (c.immagine_url) { const p = qs('#imagePreview'); p.src = c.immagine_url; p.style.display = 'block'; }
+
+  // Mostra immagini esistenti
+  pendingImages = [];
+  const images = getAllImages(c);
+  if (images.length > 0) {
+    const preview = qs('#imagePreview');
+    preview.src = images[0];
+    preview.style.display = 'block';
+
+    // Mostra thumbnails esistenti come "già caricate"
+    const container = qs('#uploadedImages');
+    container.innerHTML = '';
+    images.forEach((url, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'uploaded-thumb';
+      wrap.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px">${i===0?'Copertina':'Extra'}</span>`;
+      container.appendChild(wrap);
+    });
+  }
+
   qs('#saveBtn').textContent = 'Aggiorna Fumetto'; qs('#formTitle').textContent = 'Modifica albo';
   switchTab('add');
 }
@@ -478,11 +661,12 @@ function resetFormDirty() { formDirty = false; }
 // ==================== EXPORT ====================
 function exportCSV() {
   if (!allComics.length) return alert('Nessun fumetto da esportare!');
-  const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Note','Immagine'];
+  const headers = ['Titolo','Categoria','Numero','Anno','Publisher','Disegnatore','Lingua','Variant','Stato','Firmato','COA','Remark','Gradato','Voto','Ente','Note','Immagine','Immagini Extra'];
   const rows = allComics.map(c => [
     c.titolo||'', c.categoria||'Comics', c.numero||'', c.anno||'', c.publisher||'', c.disegnatore||'',
     c.lingua||'', c.variant||'', c.stato||'', c.firmato?'Sì':'No', c.coa?'Sì':'No', c.remark?'Sì':'No',
-    c.gradato?'Sì':'No', c.voto_gradazione||'', c.ente_gradazione||'', (c.note||'').replace(/\n/g,' '), c.immagine_url||''
+    c.gradato?'Sì':'No', c.voto_gradazione||'', c.ente_gradazione||'', (c.note||'').replace(/\n/g,' '),
+    c.immagine_url||'', c.immagini_extra||''
   ].join(';'));
   downloadBlob(new Blob([headers.join(';')+'\n'+rows.join('\n')], {type:'text/csv'}), `comic_deck_${new Date().toISOString().split('T')[0]}.csv`);
 }
@@ -493,9 +677,10 @@ function exportPDF() {
   if (!w) return alert('Permetti i popup');
   const rows = allComics.map(c => {
     const tags = [c.firmato&&'Firmato',c.coa&&'COA',c.remark&&'Sketch',c.gradato&&`Gradato ${c.voto_gradazione||''}`].filter(Boolean);
-    return `<tr><td><strong>${esc(c.titolo)}</strong></td><td>${esc(c.categoria||'Comics')}</td><td>${esc(c.numero)}</td><td>${esc(c.anno)}</td><td>${esc(c.publisher)}</td><td>${esc(c.disegnatore)}</td><td>${esc(c.stato)}</td><td>${esc((c.note||'').substring(0,100))}</td><td>${tags.join(' ')}</td></tr>`;
+    const imgCount = getAllImages(c).length;
+    return `<tr><td><strong>${esc(c.titolo)}</strong></td><td>${esc(c.categoria||'Comics')}</td><td>${esc(c.numero)}</td><td>${esc(c.anno)}</td><td>${esc(c.publisher)}</td><td>${esc(c.disegnatore)}</td><td>${esc(c.stato)}</td><td>${esc((c.note||'').substring(0,100))}</td><td>${tags.join(' ')}</td><td>${imgCount}</td></tr>`;
   }).join('');
-  w.document.write(`<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#69f0ae}</style></head><body><h1>Comic-Deck</h1><p>${new Date().toLocaleDateString('it-IT')}</p><table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Note</th><th>Tag</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  w.document.write(`<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#69f0ae}</style></head><body><h1>Comic-Deck</h1><p>${new Date().toLocaleDateString('it-IT')}</p><table><thead><tr><th>Titolo</th><th>Cat</th><th>N</th><th>Anno</th><th>Publisher</th><th>Disegnatore</th><th>Stato</th><th>Note</th><th>Tag</th><th>Foto</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
   w.document.close(); setTimeout(() => w.print(), 500);
 }
 
