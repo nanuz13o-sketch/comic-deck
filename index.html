@@ -561,6 +561,7 @@ function renderComics(comics) {
 
   for (let i = 0; i < comics.length; i++) {
     const c = comics[i];
+    console.log('Comic:', c.titolo, 'note:', c.note, 'type:', typeof c.note);
     const numDisplay = c.numero ? '<span style="color:#69f0ae;font-weight:700;">#' + escapeHtml(c.numero) + '</span> ' : '';
     const card = document.createElement('div');
     card.className = 'comic-card';
@@ -845,6 +846,7 @@ async function saveComic() {
     dbError = result.error;
   }
 
+  console.log('Saving note:', note, 'length:', note.length);
   if (dbError) {
     console.error('DB Error:', dbError);
     msg.innerHTML = '<span class="error">Errore salvataggio: ' + dbError.message + '</span>';
