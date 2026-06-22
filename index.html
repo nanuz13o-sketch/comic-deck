@@ -280,7 +280,7 @@ textarea{resize:vertical;min-height:80px}
 <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
     <div class="modal-header"><h3 id="modalTitle">Anteprima</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
-    <img id="modalImg" class="modal-img" src="" alt="Foto" onerror="this.onerror=null;this.src='';this.classList.add('img-broken');this.innerHTML='&#128247;';this.style.display='flex';this.style.alignItems='center';this.style.justifyContent='center';">
+    <img id="modalImg" class="modal-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Foto">
     <p class="swipe-hint">&#8592; Scorri per navigare &#8594;</p>
     <div id="modalGallery" class="modal-gallery"></div>
     <div id="modalMeta" class="modal-meta"></div>
@@ -785,7 +785,6 @@ function openModal(c, startIndex = 0) {
   currentModalIndex = Math.max(0, Math.min(startIndex, images.length - 1));
 
   qs('#modalTitle').textContent = c.titolo || 'Anteprima';
-  updateModalImage();
 
   // Meta
   const tags = [
@@ -806,28 +805,34 @@ function openModal(c, startIndex = 0) {
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${tags.join('')}</div>
   `;
 
+  // Mostra il modal e aggiorna l'immagine
   qs('#modalOverlay').classList.remove('hidden');
-  document.body.style.overflow = 'hidden'; // Blocca scroll body
+  document.body.style.overflow = 'hidden';
+  updateModalImage();
 }
 
 function updateModalImage() {
   if (!currentModalImages.length) return;
-  if (qs('#modalOverlay').classList.contains('hidden')) return;
   const img = qs('#modalImg');
+  const url = currentModalImages[currentModalIndex];
+
+  // Se l'URL è vuoto o invalido, mostra placeholder
+  if (!url) {
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    img.classList.add('img-broken');
+    return;
+  }
+
   img.classList.remove('img-broken');
-  img.style.display = '';
-  img.style.alignItems = '';
-  img.style.justifyContent = '';
-  img.innerHTML = '';
-  img.src = currentModalImages[currentModalIndex];
+  img.src = url;
 
   // Gallery thumbnails
   const gallery = qs('#modalGallery');
   gallery.innerHTML = '';
   if (currentModalImages.length > 1) {
-    currentModalImages.forEach((url, i) => {
+    currentModalImages.forEach((thumbUrl, i) => {
       const thumb = document.createElement('img');
-      thumb.src = url;
+      thumb.src = thumbUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
       thumb.className = 'modal-gallery-thumb' + (i === currentModalIndex ? ' active' : '');
       thumb.loading = 'lazy';
       thumb.onerror = function() { this.style.display = 'none'; };
@@ -847,7 +852,7 @@ function closeModal(e) {
     // Reset stato dopo transizione CSS
     setTimeout(() => {
       if (qs('#modalOverlay').classList.contains('hidden')) {
-        qs('#modalImg').src = '';
+        qs('#modalImg').src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
         currentModalImages = [];
         currentModalIndex = 0;
       }
