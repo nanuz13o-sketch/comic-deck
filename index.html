@@ -778,9 +778,6 @@ function toggleGradazione() {
 // ==================== MODAL GALLERY ====================
 // FIX 4: Chiudi il modal prima di aprirne uno nuovo per evitare stati sporchi
 function openModal(c, startIndex = 0) {
-  // Chiudi eventuale modal aperto
-  closeModal();
-
   const images = getAllImages(c);
   if (!images.length) return;
 
@@ -815,6 +812,7 @@ function openModal(c, startIndex = 0) {
 
 function updateModalImage() {
   if (!currentModalImages.length) return;
+  if (qs('#modalOverlay').classList.contains('hidden')) return;
   const img = qs('#modalImg');
   img.classList.remove('img-broken');
   img.style.display = '';
@@ -846,12 +844,14 @@ function closeModal(e) {
   if (!e || e.target.id === 'modalOverlay' || e.target.closest('.modal-close')) {
     qs('#modalOverlay').classList.add('hidden');
     document.body.style.overflow = ''; // Ripristina scroll body
-    // FIX 5: Reset completo dello stato del modal
+    // Reset stato dopo transizione CSS
     setTimeout(() => {
-      qs('#modalImg').src = '';
-      currentModalImages = [];
-      currentModalIndex = 0;
-    }, 300);
+      if (qs('#modalOverlay').classList.contains('hidden')) {
+        qs('#modalImg').src = '';
+        currentModalImages = [];
+        currentModalIndex = 0;
+      }
+    }, 350);
   }
 }
 
