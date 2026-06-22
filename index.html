@@ -213,6 +213,10 @@ textarea{resize:vertical;min-height:80px}
         <select id="filterTipo" onchange="searchComics()"><option value="">Tutti i tipi</option><option>Comics</option><option>Manga</option><option>Libri</option></select>
         <select id="filterLingua" onchange="searchComics()"><option value="">Tutte le lingue</option><option>Italiano</option><option>English</option><option>Altro</option></select>
         <select id="filterAnno" onchange="searchComics()"><option value="">Tutti gli anni</option></select>
+        <select id="filterTag" onchange="searchComics()"><option value="">Tutti i tag</option><option value="firmato">Firmato</option><option value="coa">COA</option><option value="remark">Sketch</option><option value="gradato">Gradato</option></select>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-secondary btn-small" style="flex:1;margin-top:0" onclick="resetFilters()">&#10005; Reset filtri</button>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-secondary btn-small" style="flex:1;margin-top:0" onclick="exportCSV()">&#128190; CSV</button>
@@ -523,15 +527,25 @@ function buildCard(c) {
 
 function searchComics() {
   const q = qs('#searchInput').value.toLowerCase().trim();
-  const tipo = qs('#filterTipo').value, lingua = qs('#filterLingua').value, anno = qs('#filterAnno').value;
+  const tipo = qs('#filterTipo').value, lingua = qs('#filterLingua').value, anno = qs('#filterAnno').value, tag = qs('#filterTag').value;
 
   let f = allComics.filter(c => !q || [c.titolo,c.publisher,c.numero,c.anno,c.disegnatore,c.note].some(v => (v||'').toLowerCase().includes(q)));
   if (tipo) f = f.filter(c => (c.categoria || 'Comics') === tipo);
   if (lingua) f = f.filter(c => (c.lingua || 'Italiano') === lingua);
   if (anno) f = f.filter(c => c.anno === anno);
+  if (tag) f = f.filter(c => c[tag] === true);
 
   f.sort((a,b) => (parseInt(a.numero)||0) - (parseInt(b.numero)||0) || (a.titolo||'').localeCompare(b.titolo||''));
   renderComics(f);
+}
+
+function resetFilters() {
+  qs('#searchInput').value = '';
+  qs('#filterTipo').value = '';
+  qs('#filterLingua').value = '';
+  qs('#filterAnno').value = '';
+  qs('#filterTag').value = '';
+  searchComics();
 }
 
 function populateAnnoFilter() {
