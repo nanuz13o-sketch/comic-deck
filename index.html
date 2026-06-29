@@ -77,7 +77,10 @@ textarea{resize:vertical;min-height:80px}
 .form-row>*{flex:1}
 
 .checkboxes{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0}
-.checkbox-label{display:flex;align-items:center;gap:6px;font-size:14px;color:#ccc}
+.checkbox-label{display:flex;align-items:center;gap:6px;font-size:14px;color:#ccc;cursor:pointer;padding:6px 10px;border-radius:8px;border:1px solid transparent;transition:all .15s}
+.checkbox-label:active{transform:scale(.97)}
+.checkbox-label input[type=checkbox]{width:18px;height:18px;accent-color:#69f0ae;margin:0;flex-shrink:0}
+.checkbox-label.checked{background:rgba(105,240,174,.15);border-color:#69f0ae;color:#69f0ae}
 
 .image-preview{width:100px;height:150px;object-fit:cover;border-radius:8px;margin:12px 0;display:none;background:#2a2a2a}
 
@@ -251,11 +254,11 @@ textarea{resize:vertical;min-height:80px}
           <option>Very Fine / Very Good</option>
           <option>Rovinato / Battle Damaged</option>
         </select>
-        <div class="checkboxes">
-          <label class="checkbox-label"><input type="checkbox" id="firmato"> Firmato</label>
-          <label class="checkbox-label"><input type="checkbox" id="coa"> COA</label>
-          <label class="checkbox-label"><input type="checkbox" id="remark"> Remark</label>
-          <label class="checkbox-label"><input type="checkbox" id="gradato" onchange="toggleGradazione()"> Gradato</label>
+        <div class="checkboxes" id="checkboxGroup">
+          <label class="checkbox-label" onclick="toggleCheck(this,'firmato')"><input type="checkbox" id="firmato" onchange="syncCheckLabel(this)"> Firmato</label>
+          <label class="checkbox-label" onclick="toggleCheck(this,'coa')"><input type="checkbox" id="coa" onchange="syncCheckLabel(this)"> COA</label>
+          <label class="checkbox-label" onclick="toggleCheck(this,'remark')"><input type="checkbox" id="remark" onchange="syncCheckLabel(this)"> Remark</label>
+          <label class="checkbox-label" onclick="toggleCheck(this,'gradato')"><input type="checkbox" id="gradato" onchange="syncCheckLabel(this)"> Gradato</label>
         </div>
         <textarea id="note" placeholder="Note..." rows="3"></textarea>
         <div id="gradazioneFields" class="hidden">
@@ -787,6 +790,27 @@ function resetForm() {
 
 function toggleGradazione() {
   qs('#gradazioneFields').classList.toggle('hidden', !qs('#gradato').checked);
+}
+
+// Toggle checkbox + label highlight
+function toggleCheck(label, id) {
+  const cb = qs('#' + id);
+  // Toggle solo se il click non è stato sul checkbox stesso (evita doppio toggle)
+  if (event.target !== cb) {
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change'));
+  }
+}
+
+function syncCheckLabel(cb) {
+  const label = cb.closest('.checkbox-label');
+  if (label) {
+    label.classList.toggle('checked', cb.checked);
+  }
+  // Se è Gradato, mostra/nascondi i campi gradazione
+  if (cb.id === 'gradato') {
+    toggleGradazione();
+  }
 }
 
 // ==================== MODAL GALLERY ====================
